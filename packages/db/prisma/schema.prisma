@@ -1,0 +1,402 @@
+// ============================================================
+// Casa do Licitante — Prisma Schema
+// Money rule: all monetary values stored as Int (centavos)
+// Dates: stored UTC, displayed in America/Sao_Paulo (BRT)
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------
+// IAM
+// ------------------------------------------------------------
+
+model Organization {
+  id        String   @id @default(cuid())
+  cnpj      String?  @unique
+  nome      String
+  plano     PlanSlug @default(observador)
+  status    OrgStatus @default(ativa)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users              User[]
+  alertSubscriptions AlertSubscription[]
+  watchedLicitacoes  WatchedLicitacao[]
+}
+
+model User {
+  id             String   @id @default(cuid())
+  organizationId String
+  email          String   @unique
+  name           String?
+  hashedPassword String?
+  role           UserRole @default(viewer)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+// ------------------------------------------------------------
+// Licitações
+// ------------------------------------------------------------
+
+model Licitacao {
+  id         String         @id @default(cuid())
+  source     DataSource
+  sourceId   String
+  sourceSyncedAt DateTime   @default(now())
+
+  modalidade         ModalidadeEnum
+  status             LicitacaoStatus @default(aberta)
+
+  orgaoUasg   String?
+  orgaoCnpj   String?
+  orgaoNome   String
+  orgaoUf     String
+  orgaoMunicipio String?
+
+  objeto String @db.Text
+
+  /// Integer centavos
+  valorEstimado Int?
+
+  dataPublicacao               DateTime?
+  dataAbertura                 DateTime?
+  dataEncerramentoPropostas    DateTime?
+  dataSessaoPublica            DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items    LicitacaoItem[]
+  editais  Edital[]
+  contrato Contrato?
+  watched  WatchedLicitacao[]
+  alerts   AlertMatch[]
+
+  @@unique([source, sourceId])
+  @@index([orgaoUf])
+  @@index([status])
+  @@index([dataAbertura])
+}
+
+model LicitacaoItem {
+  id           String @id @default(cuid())
+  licitacaoId  String
+  numeroItem   Int
+  descricao    String @db.Text
+  catmat       String?
+  catser       String?
+  quantidade   Decimal?
+  /// Integer centavos
+  valorUnitarioEstimado Int?
+
+  licitacao Licitacao @relation(fields: [licitacaoId], references: [id], onDelete: Cascade)
+
+  @@index([licitacaoId])
+}
+
+model Edital {
+  id           String   @id @default(cuid())
+  licitacaoId  String
+  urlR2        String
+  filename     String
+  textExtracted String? @db.Text
+  extractedAt  DateTime?
+  createdAt    DateTime @default(now())
+
+  licitacao Licitacao @relation(fields: [licitacaoId], references: [id], onDelete: Cascade)
+
+  @@index([licitacaoId])
+}
+
+// ------------------------------------------------------------
+// Contratos
+// ------------------------------------------------------------
+
+model Contrato {
+  id          String  @id @default(cuid())
+  licitacaoId String? @unique
+
+  contratanteUasg  String?
+  contratanteCnpj  String?
+  contratanteNome  String
+
+  contratadoCnpj String
+  contratadoNome String
+
+  vigenciaInicio  DateTime
+  vigenciaFim     DateTime
+  /// Integer centavos
+  valorGlobal     Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  licitacao   Licitacao?   @relation(fields: [licitacaoId], references: [id])
+  aditamentos Aditamento[]
+
+  @@index([contratadoCnpj])
+  @@index([vigenciaFim])
+}
+
+model Aditamento {
+  id           String   @id @default(cuid())
+  contratoId   String
+  tipo         String
+  /// Integer centavos
+  valorAcrescimo    Int @default(0)
+  novaVigenciaFim   DateTime?
+  dataAssinatura    DateTime
+  createdAt    DateTime @default(now())
+
+  contrato Contrato @relation(fields: [contratoId], references: [id], onDelete: Cascade)
+
+  @@index([contratoId])
+}
+
+// ------------------------------------------------------------
+// Fornecedores
+// ------------------------------------------------------------
+
+model Fornecedor {
+  id               String   @id @default(cuid())
+  cnpj             String   @unique
+  razaoSocial      String
+  nomeFantasia     String?
+  porte            Porte    @default(medio)
+  situacaoCadastral String?
+  dataAbertura     DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  certidoes Certidao[]
+  sancoes   Sancao[]
+}
+
+model Certidao {
+  id           String        @id @default(cuid())
+  fornecedorId String
+  tipo         CertidaoTipo
+  dataEmissao  DateTime?
+  dataValidade DateTime?
+  status       CertidaoStatus @default(pendente)
+  arquivoUrl   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  fornecedor Fornecedor @relation(fields: [fornecedorId], references: [id], onDelete: Cascade)
+
+  @@index([fornecedorId])
+  @@index([dataValidade])
+}
+
+model Sancao {
+  id           String     @id @default(cuid())
+  fornecedorId String
+  fonte        SancaoFonte
+  dataInicio   DateTime
+  dataFim      DateTime?
+  motivo       String?    @db.Text
+  createdAt    DateTime @default(now())
+
+  fornecedor Fornecedor @relation(fields: [fornecedorId], references: [id], onDelete: Cascade)
+
+  @@index([fornecedorId])
+}
+
+// ------------------------------------------------------------
+// Alertas
+// ------------------------------------------------------------
+
+model AlertSubscription {
+  id             String    @id @default(cuid())
+  organizationId String
+  keywords       String[]
+  uasgs          String[]
+  ufs            String[]
+  /// Integer centavos — null = no minimum
+  valorMin       Int?
+  /// Integer centavos — null = no maximum
+  valorMax       Int?
+  channels       AlertChannel[]
+  digest         AlertDigest   @default(realtime)
+  active         Boolean @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model WatchedLicitacao {
+  id             String @id @default(cuid())
+  organizationId String
+  licitacaoId    String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  licitacao    Licitacao    @relation(fields: [licitacaoId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, licitacaoId])
+}
+
+model AlertMatch {
+  id           String   @id @default(cuid())
+  licitacaoId  String
+  subscriptionId String
+  deliveredAt  DateTime?
+  createdAt    DateTime @default(now())
+
+  licitacao Licitacao @relation(fields: [licitacaoId], references: [id], onDelete: Cascade)
+
+  @@index([licitacaoId])
+}
+
+// ------------------------------------------------------------
+// Ingestion audit
+// ------------------------------------------------------------
+
+model SyncLog {
+  id             String     @id @default(cuid())
+  source         DataSource
+  jobId          String?
+  startedAt      DateTime
+  finishedAt     DateTime?
+  recordsFetched Int        @default(0)
+  recordsUpserted Int       @default(0)
+  errors         Int        @default(0)
+  status         SyncStatus @default(running)
+  errorDetail    String?    @db.Text
+
+  @@index([source, startedAt])
+}
+
+// ------------------------------------------------------------
+// Raw ingestion (immutable, allows reprocessing)
+// ------------------------------------------------------------
+
+model RawPncpRecord {
+  id          String   @id @default(cuid())
+  sourceId    String   @unique
+  payload     Json
+  ingestedAt  DateTime @default(now())
+}
+
+model RawComprasnetRecord {
+  id          String   @id @default(cuid())
+  sourceId    String   @unique
+  payload     Json
+  ingestedAt  DateTime @default(now())
+}
+
+// ------------------------------------------------------------
+// Enums
+// ------------------------------------------------------------
+
+enum DataSource {
+  pncp
+  comprasnet
+}
+
+enum LicitacaoStatus {
+  aberta
+  suspensa
+  homologada
+  deserta
+  fracassada
+  revogada
+  anulada
+  contrato
+}
+
+enum ModalidadeEnum {
+  pregao_eletronico
+  pregao_presencial
+  concorrencia
+  tomada_preco
+  convite
+  concurso
+  leilao
+  dispensa
+  inexigibilidade
+  rdc
+  credenciamento
+  outro
+}
+
+enum UserRole {
+  admin
+  analyst
+  viewer
+}
+
+enum PlanSlug {
+  observador
+  executor
+  estrategico
+}
+
+enum OrgStatus {
+  ativa
+  suspensa
+  cancelada
+}
+
+enum Porte {
+  me
+  epp
+  medio
+  grande
+}
+
+enum CertidaoTipo {
+  cnd_federal
+  fgts
+  trabalhista
+  estadual
+  municipal
+}
+
+enum CertidaoStatus {
+  valida
+  vencida
+  pendente
+  irregular
+}
+
+enum SancaoFonte {
+  ceis
+  cnep
+}
+
+enum AlertChannel {
+  email
+  webhook
+  whatsapp
+}
+
+enum AlertDigest {
+  realtime
+  daily
+  weekly
+}
+
+enum SyncStatus {
+  running
+  success
+  partial
+  failed
+}
