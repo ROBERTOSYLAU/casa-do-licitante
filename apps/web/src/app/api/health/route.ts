@@ -1,4 +1,4 @@
-import { db } from '@casa/db';
+import { prisma } from '@casa/db';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -8,7 +8,7 @@ export async function GET() {
 
   // Database check
   try {
-    await db.$queryRaw`SELECT 1`;
+    await prisma.$queryRaw`SELECT 1`;
     checks.database = 'ok';
   } catch {
     checks.database = 'error';
