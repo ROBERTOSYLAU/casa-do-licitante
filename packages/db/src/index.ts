@@ -1,3 +1,4 @@
+import 'server-only';
 import { PrismaClient } from './generated/prisma/index.js';
 
 // Singleton pattern — prevents multiple Prisma instances in dev hot reload
