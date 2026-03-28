@@ -1,10 +1,27 @@
-// Auth-protected shell. NextAuth session guard will be added here.
-// For now this is a structural placeholder.
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+import { redirect } from 'next/navigation';
+import { auth } from '@/auth';
+import { Sidebar } from '@/components/nav/Sidebar';
+import { Topbar } from '@/components/nav/Topbar';
+
+export default async function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const session = await auth();
+  if (!session) redirect('/login');
+
   return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      {/* TODO: add sidebar + top nav once auth is wired */}
-      <main className="container mx-auto px-4 py-8">{children}</main>
+    <div className="flex h-screen overflow-hidden bg-slate-950 text-white">
+      <Sidebar />
+
+      {/* Main content area — pushed right of sidebar on desktop */}
+      <div className="flex flex-col flex-1 overflow-hidden lg:pl-60">
+        <Topbar user={session.user} />
+        <main className="flex-1 overflow-y-auto">
+          <div className="px-6 py-8 lg:px-8">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }
