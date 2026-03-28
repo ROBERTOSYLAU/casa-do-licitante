@@ -8,7 +8,12 @@
     "type-check": "turbo run type-check",
     "db:generate": "turbo run db:generate",
     "db:migrate": "turbo run db:migrate",
-    "db:studio": "turbo run db:studio"
+    "db:studio": "turbo run db:studio",
+    "start:web": "pnpm --filter @casa/web start",
+    "start:worker": "pnpm --filter @casa/worker start",
+    "pm2:start": "pm2 start ecosystem.config.cjs --env production",
+    "pm2:reload": "pm2 reload ecosystem.config.cjs --env production",
+    "pm2:stop": "pm2 stop ecosystem.config.cjs"
   },
   "devDependencies": {
     "turbo": "^2.3.3",
