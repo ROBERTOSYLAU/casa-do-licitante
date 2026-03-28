@@ -9,25 +9,6 @@ export const authConfig = {
     signIn: '/login',
   },
   callbacks: {
-    authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user;
-      const isAppRoute =
-        /^\/(dashboard|licitacoes|contratos|fornecedores|ferramentas|alertas)(\/|$)/.test(
-          nextUrl.pathname,
-        );
-
-      if (isAppRoute && !isLoggedIn) {
-        const loginUrl = new URL('/login', nextUrl.origin);
-        loginUrl.searchParams.set('callbackUrl', nextUrl.pathname);
-        return Response.redirect(loginUrl);
-      }
-
-      if (nextUrl.pathname === '/login' && isLoggedIn) {
-        return Response.redirect(new URL('/dashboard', nextUrl.origin));
-      }
-
-      return true;
-    },
     jwt({ token, user }) {
       if (user) {
         token.id = user.id as string;
