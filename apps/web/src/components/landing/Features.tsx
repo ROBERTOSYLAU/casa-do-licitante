@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import type { Route } from 'next';
 import type { LucideIcon } from 'lucide-react';
 import {
   Search,
@@ -17,7 +18,7 @@ const features: {
   icon: LucideIcon;
   title: string;
   description: string;
-  link?: string;
+  link?: Route;
 }[] = [
   {
     icon: Search,

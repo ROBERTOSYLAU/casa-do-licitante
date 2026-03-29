@@ -1,6 +1,5 @@
 import 'server-only';
 import NextAuth from 'next-auth';
-import { PrismaAdapter } from '@auth/prisma-adapter';
 import Credentials from 'next-auth/providers/credentials';
 import { prisma } from '@casa/db';
 import bcrypt from 'bcryptjs';
@@ -12,9 +11,8 @@ const credentialsSchema = z.object({
   password: z.string().min(1),
 });
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const nextAuthResult = NextAuth({
   ...authConfig,
-  adapter: PrismaAdapter(prisma),
   session: { strategy: 'jwt' },
   providers: [
     Credentials({
@@ -54,3 +52,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
 });
+
+export const handlers = nextAuthResult.handlers;
+export const auth: typeof nextAuthResult.auth = nextAuthResult.auth;
+export const signIn: typeof nextAuthResult.signIn = nextAuthResult.signIn;
+export const signOut: typeof nextAuthResult.signOut = nextAuthResult.signOut;

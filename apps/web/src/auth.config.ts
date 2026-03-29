@@ -4,7 +4,7 @@ import type { UserRole } from '@casa/db';
 // Edge-safe auth config — no Prisma, no bcryptjs, no Node-only APIs.
 // Used by middleware (runs on Edge runtime).
 // Full config with adapter + providers lives in auth.ts (server-only).
-export const authConfig = {
+export const authConfig: NextAuthConfig = {
   pages: {
     signIn: '/login',
   },
@@ -18,11 +18,16 @@ export const authConfig = {
       return token;
     },
     session({ session, token }) {
-      session.user.id = token.id as string;
-      (session.user as Record<string, unknown>).role = token.role;
-      (session.user as Record<string, unknown>).organizationId = token.organizationId;
+      const sessionUser = session.user as typeof session.user & {
+        id: string;
+        role?: UserRole;
+        organizationId?: string;
+      };
+      sessionUser.id = token.id as string;
+      sessionUser.role = token.role as UserRole;
+      sessionUser.organizationId = token.organizationId as string;
       return session;
     },
   },
   providers: [], // Populated in auth.ts with Credentials (and Google when added)
-} satisfies NextAuthConfig;
+};

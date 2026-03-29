@@ -20,11 +20,19 @@ const ROLE_LABELS: Record<string, string> = {
 
 function getInitials(name: string | null | undefined, email: string): string {
   if (name) {
-    const parts = name.trim().split(/\s+/);
-    return parts.length >= 2
-      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-      : parts[0].slice(0, 2).toUpperCase();
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      const first = parts[0]?.[0] ?? '';
+      const last = parts[parts.length - 1]?.[0] ?? '';
+      const initials = `${first}${last}`.trim();
+      if (initials) return initials.toUpperCase();
+    }
+
+    if (parts[0]) {
+      return parts[0].slice(0, 2).toUpperCase();
+    }
   }
+
   return email.slice(0, 2).toUpperCase();
 }
 

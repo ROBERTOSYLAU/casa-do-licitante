@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
+import type { Route } from 'next';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
   FileSearch,
@@ -13,7 +15,7 @@ import {
   X,
 } from 'lucide-react';
 
-const NAV_ITEMS = [
+const NAV_ITEMS: { href: Route; label: string; icon: LucideIcon }[] = [
   { href: '/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
   { href: '/licitacoes',   label: 'Licitações',   icon: FileSearch      },
   { href: '/contratos',    label: 'Contratos',    icon: FileCheck2      },

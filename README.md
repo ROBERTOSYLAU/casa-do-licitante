@@ -1,156 +1,152 @@
-[README.md](https://github.com/user-attachments/files/26325665/README.md)
-# 🏛️ Casa do Licitante
+# 🏛️ App Casa do Licitante
 
-> Plataforma SaaS completa para licitações públicas brasileiras — agregando editais, automatizando buscas e acelerando propostas.
+**Atualizado em:** domingo, 29/03/2026 às 01:28 (GMT-3)
 
-![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.8-blue?style=flat-square&logo=typescript)
-![Turborepo](https://img.shields.io/badge/Turborepo-monorepo-EF4444?style=flat-square&logo=turborepo)
-![License](https://img.shields.io/badge/license-MIT-green?style=flat-square)
+Plataforma SaaS para monitoramento, triagem e operação comercial de licitações públicas no Brasil.
+
+## Status atual
+
+O projeto já tem base real de produto e pode ser colocado online em VPS com foco em **beta privado / operação assistida**.
+
+### O que já existe
+- monorepo com **Next.js 15 + TypeScript + Turborepo + pnpm**
+- app web separado de worker de ingestão
+- autenticação com **NextAuth + Prisma**
+- schema de banco estruturado para:
+  - organizações
+  - usuários
+  - licitações
+  - itens
+  - editais
+  - contratos
+  - alertas
+  - logs de sincronização
+- conectores governamentais iniciais:
+  - PNCP
+  - ComprasNet
+- infraestrutura preparada para:
+  - PostgreSQL
+  - Redis
+  - PM2
+  - Nginx
+  - VPS Hostinger / Ubuntu
+
+### O que ainda está em evolução
+- detalhe rico e canônico de licitação vindo do banco
+- dashboard totalmente orientado a dados reais
+- contratos e fornecedores em camada de produto completa
+- observabilidade forte da ingestão
+- enriquecimento com IA, editais e automações comerciais
 
 ---
 
-## 📌 Sobre o Projeto
+## Estrutura do projeto
 
-O **Casa do Licitante** é uma plataforma inteligente que centraliza licitações públicas de múltiplas fontes governamentais, permitindo que empresas encontrem oportunidades, analisem editais e gerenciem propostas em um único lugar.
-
-### ✨ Funcionalidades
-
-- 🔍 **Busca unificada** de licitações em tempo real (PNCP, ComprasNet, Portal de Compras Públicas)
-- 📢 **Alertas personalizados** por palavra-chave, UF e modalidade
-- 📄 **Análise de editais** com IA
-- 🏢 **Consulta de CNPJ** e dados de fornecedores
-- 📰 **Integração com Diário Oficial** da União
-- 📊 **Dashboard** com métricas e histórico de participações
-- 🔐 **Autenticação e multi-tenant** por empresa
-
----
-
-## 🗂️ Estrutura do Monorepo
-
-```
-casa-do-licitante/
+```bash
+app-casa-do-licitante/
 ├── apps/
-│   └── web/              # Next.js — interface principal
+│   ├── web/              # aplicação principal Next.js
+│   └── worker/           # ingestão e rotinas assíncronas
 ├── packages/
-│   ├── gov-apis/         # Conectores das APIs governamentais
-│   ├── domain/           # Tipos TypeScript compartilhados
-│   ├── db/               # Schema e cliente de banco de dados
-│   └── ui/               # Componentes de UI compartilhados
-├── scripts/              # Scripts de deploy e utilitários
-├── nginx/                # Configuração do proxy reverso
-├── turbo.json            # Configuração do Turborepo
-└── pnpm-workspace.yaml   # Workspaces do pnpm
+│   ├── db/               # Prisma schema + client
+│   ├── domain/           # tipos e contratos de domínio
+│   └── gov-apis/         # conectores das APIs públicas
+├── nginx/                # proxy reverso
+├── scripts/              # setup e deploy VPS
+├── ecosystem.config.cjs  # PM2
+└── turbo.json            # orquestração do monorepo
 ```
 
 ---
 
-## 🌐 APIs Governamentais Integradas
-
-| Fonte | Status | Descrição |
-|-------|--------|-----------|
-| [PNCP](https://pncp.gov.br/api/v1) | ✅ Ativo | Portal Nacional de Contratações Públicas |
-| [ComprasNet](https://compras.dados.gov.br) | ✅ Ativo | Sistema federal legado (UASG) |
-| [BrasilAPI](https://brasilapi.com.br) | 🔜 Em breve | CNPJ, CEP, bancos, feriados |
-| [Portal de Compras Públicas](https://portaldecompraspublicas.com.br) | 🔜 Em breve | Plataforma estadual/municipal |
-| [Diário Oficial (DOU)](https://www.in.gov.br) | 🔜 Em breve | Publicações oficiais da União |
-| [TCU](https://portal.tcu.gov.br) | 🔜 Em breve | Tribunal de Contas da União |
-
----
-
-## 🚀 Como Rodar Localmente
+## Rodando localmente
 
 ### Pré-requisitos
-
 - Node.js 20+
 - pnpm 9+
-- Docker (para banco de dados)
+- PostgreSQL
+- Redis
 
 ### Instalação
 
 ```bash
-# Clone o repositório
-git clone https://github.com/ROBERTOSYLAU/casa-do-licitante.git
-cd casa-do-licitante
-
-# Instale as dependências
+git clone https://github.com/ROBERTOSYLAU/app-casa-do-licitante.git
+cd app-casa-do-licitante
 pnpm install
-
-# Configure as variáveis de ambiente
 cp .env.example .env
-# Edite o .env com suas chaves
-
-# Suba o banco de dados
-docker compose up -d
-
-# Rode em modo desenvolvimento
-pnpm turbo dev
 ```
 
-### Comandos Úteis
+Depois configure o `.env` com os valores reais.
+
+### Banco e Prisma
 
 ```bash
-pnpm turbo build       # Build completo
-pnpm turbo dev         # Modo desenvolvimento
-pnpm turbo test        # Rodar testes
-pnpm turbo lint        # Lint em todos os pacotes
+pnpm db:generate
+pnpm db:migrate
+```
+
+### Desenvolvimento
+
+```bash
+pnpm dev
 ```
 
 ---
 
-## ⚙️ Variáveis de Ambiente
-
-Crie um arquivo `.env` baseado no `.env.example`:
+## Variáveis importantes
 
 ```env
-# Banco de dados
 DATABASE_URL=
-
-# Autenticação
 NEXTAUTH_SECRET=
 NEXTAUTH_URL=
-
-# APIs (quando exigir chave)
-PORTAL_COMPRAS_API_KEY=
+REDIS_URL=
 ```
 
-> ⚠️ Nunca commite o arquivo `.env` — ele está no `.gitignore`.
+Se for usar deploy em produção, valide também:
+- domínio final
+- configuração do Nginx
+- PM2
+- estratégia de build/deploy do worker
 
 ---
 
-## 🏗️ Stack Tecnológica
+## Deploy em VPS
 
-| Camada | Tecnologia |
-|--------|-----------|
-| Frontend | Next.js 15, React, Tailwind CSS |
-| Backend | Node.js, TypeScript |
-| Banco de dados | PostgreSQL |
-| ORM | Prisma / Drizzle |
-| Monorepo | Turborepo + pnpm workspaces |
-| Infra | Docker, nginx, PM2 |
-| Deploy | VPS Hostinger (Ubuntu 24.04) |
+O projeto já inclui base para deploy com:
+- `scripts/setup-vps.sh`
+- `scripts/deploy.sh`
+- `nginx/casa-do-licitante.conf`
+- `ecosystem.config.cjs`
 
----
+### Fluxo típico
 
-## 🤝 Contribuindo
-
-Contribuições são bem-vindas! Veja como:
-
-1. Faça um fork do projeto
-2. Crie uma branch: `git checkout -b feature/minha-feature`
-3. Commit suas mudanças: `git commit -m 'feat: minha feature'`
-4. Push para a branch: `git push origin feature/minha-feature`
-5. Abra um Pull Request
+```bash
+cd /var/www/app-casa-do-licitante
+git pull origin main
+pnpm install --frozen-lockfile
+pnpm db:generate
+pnpm db:migrate
+pnpm build
+pm2 reload ecosystem.config.cjs --env production
+sudo systemctl reload nginx
+```
 
 ---
 
-## 📄 Licença
+## Direção estratégica
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Este projeto está mais próximo de:
+- **produto SaaS em beta privado**, do que
+- simples protótipo visual.
+
+O próximo salto de valor está em fechar 4 pilares:
+1. busca + detalhe consistente
+2. persistência canônica no banco
+3. rotina de ingestão observável
+4. dashboard/alertas com utilidade comercial real
 
 ---
 
-<div align="center">
-  <p>Feito com ❤️ para facilitar a vida de quem lida com licitações públicas no Brasil</p>
-  <p><strong>Casa do Licitante</strong> — Sua vantagem nas contratações públicas</p>
-</div>
+## Licença
+
+MIT
