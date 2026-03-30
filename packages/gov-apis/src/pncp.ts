@@ -125,10 +125,8 @@ async function fetchByModalidade(
 export async function fetchPncpBids(
   filters: SearchFilters,
 ): Promise<LicitacaoSearchResult[]> {
-  const modalidades =
-    filters.modalidade && MODALIDADE_MAP[filters.modalidade]
-      ? [MODALIDADE_MAP[filters.modalidade]]
-      : DEFAULT_MODALIDADES;
+  const mapped = filters.modalidade ? MODALIDADE_MAP[filters.modalidade] : undefined;
+  const modalidades: number[] = mapped !== undefined ? [mapped] : DEFAULT_MODALIDADES;
 
   const results = await Promise.all(
     modalidades.map((m) => fetchByModalidade(m, filters)),
