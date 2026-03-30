@@ -174,15 +174,15 @@ importers:
 
   apps/worker:
     dependencies:
-      '@casa/db':
-        specifier: workspace:*
-        version: link:../../packages/db
       '@casa/domain':
         specifier: workspace:*
         version: link:../../packages/domain
       '@casa/gov-apis':
         specifier: workspace:*
         version: link:../../packages/gov-apis
+      '@prisma/client':
+        specifier: ^6.2.1
+        version: 6.19.2(prisma@6.19.2(typescript@5.9.3))(typescript@5.9.3)
       bullmq:
         specifier: ^5.34.8
         version: 5.71.1
