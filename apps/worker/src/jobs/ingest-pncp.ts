@@ -6,7 +6,7 @@
  * Idempotent: uses upsert on (source, sourceId)
  */
 import type { Job } from 'bullmq';
-import { prisma } from '@casa/db';
+import { prisma } from '../db.js';
 import { fetchPncpBids } from '@casa/gov-apis';
 import type { IngestJobPayload } from '@casa/domain';
 
