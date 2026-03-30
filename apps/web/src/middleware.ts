@@ -1,30 +1,26 @@
 import NextAuth from 'next-auth';
-import type { NextAuthRequest } from 'next-auth';
 import { authConfig } from '@/auth.config';
-import { NextResponse } from 'next/server';
-
-const { auth } = NextAuth(authConfig);
 
 const APP_ROUTES = /^\/(dashboard|licitacoes|contratos|fornecedores|ferramentas|alertas)(\/|$)/;
 
-function middleware(req: NextAuthRequest): NextResponse {
-  const { nextUrl } = req;
-  const isLoggedIn = !!req.auth;
+export default NextAuth({
+  ...authConfig,
+  callbacks: {
+    ...authConfig.callbacks,
+    authorized({ auth, request: { nextUrl } }) {
+      const isLoggedIn = !!auth?.user;
+      const isAppRoute = APP_ROUTES.test(nextUrl.pathname);
 
-  if (APP_ROUTES.test(nextUrl.pathname) && !isLoggedIn) {
-    const loginUrl = new URL('/login', nextUrl.origin);
-    loginUrl.searchParams.set('callbackUrl', nextUrl.pathname);
-    return NextResponse.redirect(loginUrl);
-  }
+      if (isAppRoute && !isLoggedIn) return false; // redireciona para /login automaticamente
 
-  if (nextUrl.pathname === '/login' && isLoggedIn) {
-    return NextResponse.redirect(new URL('/dashboard', nextUrl.origin));
-  }
+      if (nextUrl.pathname === '/login' && isLoggedIn) {
+        return Response.redirect(new URL('/dashboard', nextUrl.origin));
+      }
 
-  return NextResponse.next();
-}
-
-export default auth(middleware);
+      return true;
+    },
+  },
+}).auth;
 
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|api/health|api/auth).*)'],
