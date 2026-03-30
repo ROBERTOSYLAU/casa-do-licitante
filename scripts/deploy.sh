@@ -3,8 +3,7 @@
 # Called by: .github/workflows/deploy.yml
 set -euo pipefail
 
-APP_DIR="/var/www/app-casa-do-licitante"
-LOG_DIR="$APP_DIR/logs"
+APP_DIR="/docker/app-casa-do-licitante"
 
 echo "==> [$(date -u +%Y-%m-%dT%H:%M:%SZ)] Starting deployment"
 
@@ -12,38 +11,16 @@ cd "$APP_DIR"
 
 # Pull latest code
 echo "==> Pulling latest code..."
-git fetch --tags origin main
+git fetch origin main
 git reset --hard origin/main
 
-# Install dependencies
-echo "==> Installing dependencies..."
-pnpm install --frozen-lockfile
+# Rebuild and restart web + worker containers (zero-downtime: postgres/redis untouched)
+echo "==> Rebuilding containers..."
+docker compose up -d --build --no-deps web worker
 
-# Generate Prisma client
-echo "==> Generating Prisma client..."
-pnpm db:generate
-
-# Run database migrations
+# Run migrations inside the new web container
 echo "==> Running database migrations..."
-pnpm db:migrate
-
-# Build all apps
-echo "==> Building apps..."
-pnpm build
-
-# Create logs directory
-mkdir -p "$LOG_DIR"
-
-# Reload web app (zero-downtime)
-echo "==> Reloading web process..."
-pm2 reload ecosystem.config.cjs --only web --update-env
-
-# Restart worker (needs full restart to pick up code changes)
-echo "==> Restarting worker process..."
-pm2 restart ecosystem.config.cjs --only worker --update-env
-
-# Save PM2 process list
-pm2 save
+docker exec casa-web sh -c 'cd /app && node_modules/.bin/prisma migrate deploy --schema packages/db/prisma/schema.prisma'
 
 echo "==> Deployment complete!"
-pm2 status
+docker compose ps
