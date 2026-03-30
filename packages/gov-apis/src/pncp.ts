@@ -1,49 +1,70 @@
 /**
  * PNCP connector — Portal Nacional de Contratações Públicas
- * Base: https://pncp.gov.br/api/pncp/v1  (public, no auth required)
+ * Base: https://pncp.gov.br/api/consulta/v1  (public, no auth required)
  *
- * All values normalised to domain types.
- * Money → integer centavos.
+ * Docs: https://pncp.gov.br/pncp-consulta/swagger-ui/index.html
+ * Datas no formato yyyyMMdd (sem hifens)
+ * tamanhoPagina mínimo: 10
  */
 import type { LicitacaoSearchResult, SearchFilters } from '@casa/domain';
 
-const BASE = 'https://pncp.gov.br/api/v1';
+const BASE = 'https://pncp.gov.br/api/consulta/v1';
+
+// Mapeamento modalidade domínio → codigoModalidadeContratacao PNCP
+const MODALIDADE_MAP: Record<string, number> = {
+  pregao_eletronico:  6,
+  pregao_presencial:  7,
+  concorrencia:       4,
+  dispensa:           8,
+  inexigibilidade:    9,
+  credenciamento:     12,
+  leilao:             1,
+  concurso:           3,
+};
+
+// Modalidades padrão quando nenhuma é selecionada (as mais comuns)
+const DEFAULT_MODALIDADES = [6, 7, 8, 9];
 
 interface PncpLicitacao {
   numeroControlePNCP: string;
-  objeto: string;
+  objetoCompra: string;
   orgaoEntidade: { razaoSocial: string; cnpj: string };
-  unidadeOrgao?: { codigo?: string; municipioNome?: string; uf?: string };
-  modalidade: { nome: string; id: number };
+  unidadeOrgao?: { codigoUnidade?: string; municipioNome?: string; ufSigla?: string };
+  modalidadeNome: string;
+  modalidadeId: number;
   situacaoCompraNome: string;
   valorTotalEstimado?: number;
-  dataPublicacaoPNCP: string;
+  dataPublicacaoPncp: string;
   dataAberturaProposta?: string;
   dataEncerramentoProposta?: string;
 }
 
 interface PncpResponse {
   data: PncpLicitacao[];
-  totalRegistros: number;
-  totalPaginas: number;
+  totalRegistros?: number;
+  totalPaginas?: number;
+}
+
+function toApiDate(iso: string): string {
+  return iso.replace(/-/g, '');
 }
 
 function normalizePncpModalidade(nome: string): string {
   const lower = nome.toLowerCase();
-  if (lower.includes('pregão eletrônico') || lower.includes('pregao eletronico'))
-    return 'pregao_eletronico';
-  if (lower.includes('pregão presencial')) return 'pregao_presencial';
-  if (lower.includes('concorrência')) return 'concorrencia';
+  if (lower.includes('pregão eletrônico') || lower.includes('pregao eletronico')) return 'pregao_eletronico';
+  if (lower.includes('pregão presencial') || lower.includes('pregao presencial')) return 'pregao_presencial';
+  if (lower.includes('concorrência') || lower.includes('concorrencia')) return 'concorrencia';
   if (lower.includes('dispensa')) return 'dispensa';
   if (lower.includes('inexigibilidade')) return 'inexigibilidade';
   if (lower.includes('credenciamento')) return 'credenciamento';
+  if (lower.includes('leilão') || lower.includes('leilao')) return 'leilao';
+  if (lower.includes('concurso')) return 'concurso';
   return 'outro';
 }
 
 function normalizePncpStatus(situacao: string): LicitacaoSearchResult['status'] {
   const s = situacao.toLowerCase();
-  if (s.includes('aberta') || s.includes('publicada') || s.includes('divulgada'))
-    return 'aberta';
+  if (s.includes('divulgada') || s.includes('aberta') || s.includes('publicada')) return 'aberta';
   if (s.includes('suspensa')) return 'suspensa';
   if (s.includes('homolog')) return 'homologada';
   if (s.includes('deserta')) return 'deserta';
@@ -53,47 +74,65 @@ function normalizePncpStatus(situacao: string): LicitacaoSearchResult['status'] 
   return 'aberta';
 }
 
-export async function fetchPncpBids(
+async function fetchByModalidade(
+  modalidade: number,
   filters: SearchFilters,
 ): Promise<LicitacaoSearchResult[]> {
   const today = new Date().toISOString().slice(0, 10);
+  const dataInicial = toApiDate(filters.dataInicial ?? today);
+  const dataFinal = toApiDate(filters.dataFinal ?? today);
+
   const params = new URLSearchParams({
     pagina: String(filters.page ?? 1),
     tamanhoPagina: '20',
-    dataInicial: filters.dataInicial ?? today,
-    dataFinal: filters.dataFinal ?? today,
+    dataInicial,
+    dataFinal,
+    codigoModalidadeContratacao: String(modalidade),
   });
 
-  if (filters.keyword) params.set('termo', filters.keyword);
-  if (filters.uf) params.set('uf', filters.uf);
+  if (filters.uf) params.set('ufSigla', filters.uf);
 
-  const res = await fetch(
-    `${BASE}/contratacoes/publicacao?${params.toString()}`,
-  );
-
-  if (!res.ok) {
-    throw new Error(`PNCP responded ${res.status}: ${await res.text()}`);
-  }
+  const res = await fetch(`${BASE}/contratacoes/publicacao?${params.toString()}`);
+  if (!res.ok) return [];
 
   const body = (await res.json()) as PncpResponse;
   const items = body.data ?? [];
 
-  return items.map((l) => ({
-    id: `pncp-${l.numeroControlePNCP}`,
-    source: 'pncp' as const,
-    sourceId: l.numeroControlePNCP,
-    objeto: l.objeto,
-    orgaoNome: l.orgaoEntidade.razaoSocial,
-    orgaoUasg: l.unidadeOrgao?.codigo,
-    uf: l.unidadeOrgao?.uf ?? '',
-    municipio: l.unidadeOrgao?.municipioNome,
-    modalidade: normalizePncpModalidade(l.modalidade.nome),
-    status: normalizePncpStatus(l.situacaoCompraNome),
-    valorEstimado:
-      l.valorTotalEstimado != null
-        ? Math.round(l.valorTotalEstimado * 100)
-        : undefined,
-    dataAbertura: l.dataAberturaProposta ?? l.dataPublicacaoPNCP,
-    dataEncerramentoPropostas: l.dataEncerramentoProposta,
-  }));
+  const keyword = filters.keyword?.toLowerCase();
+
+  return items
+    .filter((l) => !keyword || l.objetoCompra.toLowerCase().includes(keyword))
+    .map((l) => ({
+      id: `pncp-${l.numeroControlePNCP}`,
+      source: 'pncp' as const,
+      sourceId: l.numeroControlePNCP,
+      objeto: l.objetoCompra,
+      orgaoNome: l.orgaoEntidade.razaoSocial,
+      orgaoUasg: l.unidadeOrgao?.codigoUnidade,
+      uf: l.unidadeOrgao?.ufSigla ?? '',
+      municipio: l.unidadeOrgao?.municipioNome,
+      modalidade: normalizePncpModalidade(l.modalidadeNome),
+      status: normalizePncpStatus(l.situacaoCompraNome),
+      valorEstimado:
+        l.valorTotalEstimado != null
+          ? Math.round(l.valorTotalEstimado * 100)
+          : undefined,
+      dataAbertura: l.dataAberturaProposta ?? l.dataPublicacaoPncp,
+      dataEncerramentoPropostas: l.dataEncerramentoProposta,
+    }));
+}
+
+export async function fetchPncpBids(
+  filters: SearchFilters,
+): Promise<LicitacaoSearchResult[]> {
+  const modalidades =
+    filters.modalidade && MODALIDADE_MAP[filters.modalidade]
+      ? [MODALIDADE_MAP[filters.modalidade]]
+      : DEFAULT_MODALIDADES;
+
+  const results = await Promise.all(
+    modalidades.map((m) => fetchByModalidade(m, filters)),
+  );
+
+  return results.flat().slice(0, 50);
 }
