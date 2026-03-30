@@ -35,7 +35,6 @@ export async function fetchComprasnetBids(
 
   const res = await fetch(
     `${BASE}/licitacoes/v1/licitacoes.json?${params.toString()}`,
-    { cache: 'no-store' },
   );
 
   if (!res.ok) {
