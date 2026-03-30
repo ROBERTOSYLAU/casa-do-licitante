@@ -1,13 +1,14 @@
-import type { NextRequest } from 'next/server';
+import NextAuth from 'next-auth';
+import { authConfig } from '@/auth.config';
 import { NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+
+const { auth } = NextAuth(authConfig);
 
 const APP_ROUTES = /^\/(dashboard|licitacoes|contratos|fornecedores|ferramentas|alertas)(\/|$)/;
 
-export default async function middleware(req: NextRequest) {
+export default auth((req) => {
   const { nextUrl } = req;
-  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  const isLoggedIn = !!token;
+  const isLoggedIn = !!req.auth;
 
   if (APP_ROUTES.test(nextUrl.pathname) && !isLoggedIn) {
     const loginUrl = new URL('/login', nextUrl.origin);
@@ -20,7 +21,7 @@ export default async function middleware(req: NextRequest) {
   }
 
   return NextResponse.next();
-}
+});
 
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|api/health|api/auth).*)'],
