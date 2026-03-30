@@ -3,7 +3,7 @@
 # Run once as root or with sudo: bash setup-vps.sh
 set -euo pipefail
 
-APP_DIR="/var/www/casa-do-licitante"
+APP_DIR="/var/www/app-casa-do-licitante"
 APP_USER="deploy"
 DOMAIN="yourdomain.com"   # <-- change this
 

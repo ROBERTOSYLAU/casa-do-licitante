@@ -31,4 +31,4 @@ jobs:
           script: |
             export NVM_DIR="$HOME/.nvm"
             source "$NVM_DIR/nvm.sh"
-            bash /var/www/casa-do-licitante/scripts/deploy.sh
+            bash /var/www/app-casa-do-licitante/scripts/deploy.sh

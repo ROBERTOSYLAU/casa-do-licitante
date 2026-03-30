@@ -3,7 +3,7 @@
 # Called by: .github/workflows/deploy.yml
 set -euo pipefail
 
-APP_DIR="/var/www/casa-do-licitante"
+APP_DIR="/var/www/app-casa-do-licitante"
 LOG_DIR="$APP_DIR/logs"
 
 echo "==> [$(date -u +%Y-%m-%dT%H:%M:%SZ)] Starting deployment"
