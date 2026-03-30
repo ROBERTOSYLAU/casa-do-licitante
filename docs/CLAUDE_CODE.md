@@ -1,123 +1,116 @@
 # 🤖 CLAUDE CODE — LOG DE TRABALHO
-**Última atualização:** 2026-03-30 às 14:45 (GMT-3)
+**Última atualização:** 2026-03-30 às 16:20 (GMT-3)
 **Assistente:** Claude Code (claude-sonnet-4-6) via VPS Hostinger
 
 ---
 
-## ✅ O QUE FOI FEITO HOJE
+## ✅ O QUE FOI FEITO — SESSÃO 2026-03-30
 
 ### 1. MCPs Instalados na VPS
-Os seguintes servidores MCP foram instalados e estão conectados no Claude Code:
+Conectados e funcionando no Claude Code:
 
-| MCP | Função |
-|-----|--------|
-| `brave-search` | Busca na web em tempo real |
-| `github` | Gerenciamento do repositório GitHub |
-| `memory` | Memória em grafo de conhecimento |
-| `sequential-thinking` | Raciocínio estruturado para tarefas complexas |
-| `fetch` | Acesso a APIs públicas (PNCP, IBGE, ComprasNet, etc.) |
+| MCP | Status | Função |
+|-----|--------|--------|
+| `brave-search` | ✅ | Busca na web em tempo real |
+| `github` | ✅ | Gerenciamento do repositório GitHub |
+| `memory` | ✅ | Memória em grafo de conhecimento |
+| `sequential-thinking` | ✅ | Raciocínio estruturado para tarefas complexas |
+| `fetch` | ✅ | Acesso a APIs públicas (PNCP, IBGE, ComprasNet, etc.) |
 
-### 2. Repositório Clonado na VPS
+### 2. Repositório Clonado e Estruturado na VPS
 - Repositório: `https://github.com/ROBERTOSYLAU/app-casa-do-licitante`
-- Clonado em: `/root/app-casa-do-licitante/`
-- Copiado também para: `/docker/app-casa-do-licitante/` (caminho padrão do Docker Manager da Hostinger)
+- Clone Git: `/root/app-casa-do-licitante/`
+- Docker Manager Hostinger: `/docker/app-casa-do-licitante/` (fonte + compose)
 
-### 3. Infraestrutura Docker Criada
-Todos os arquivos abaixo foram criados em `/docker/app-casa-do-licitante/`:
+### 3. Infraestrutura Docker — Criada e RODANDO ✅
 
-#### `docker-compose.yml`
-Orquestra 5 serviços:
-- **postgres** — PostgreSQL 16 com healthcheck e volume persistente
-- **redis** — Redis 7 com persistência appendonly
-- **web** — Next.js 15 (build multi-stage, porta 3000 interna)
-- **worker** — BullMQ worker (build multi-stage)
-- **nginx** — Proxy reverso na porta 80 → web:3000
+#### Arquivos criados em `/docker/app-casa-do-licitante/`:
 
-#### `Dockerfile.web`
-- Build multi-stage (deps → builder → runner)
-- Node 20 Alpine
-- pnpm 9.15.4 via corepack
-- Gera Prisma client no build
-- Roda migrations automaticamente ao iniciar (`scripts/entrypoint-web.sh`)
+| Arquivo | Função |
+|---------|--------|
+| `docker-compose.yml` | Orquestra 4 serviços (postgres, redis, web, worker) |
+| `Dockerfile.web` | Build multi-stage Next.js (builder + runner) |
+| `Dockerfile.worker` | Worker com tsx (executa TypeScript direto, sem compilar) |
+| `scripts/entrypoint-web.sh` | Roda `prisma migrate deploy` antes de subir o app |
+| `.env` | Variáveis de ambiente configuradas |
+| `nginx/docker.conf` | Config nginx para proxy reverso |
 
-#### `Dockerfile.worker`
-- Build multi-stage (deps → builder → runner)
-- Compila TypeScript com `tsc`
-- Roda `node apps/worker/dist/index.js`
+#### Serviços em produção agora:
 
-#### `nginx/docker.conf`
-- Proxy reverso para `app.casadolicitante.com.br`
-- Rate limiting: `/api/` (30r/m) e `/api/auth/` (10r/m)
-- Cache de assets estáticos (`/_next/static/`)
-- Sem rate limit no webhook do Stripe
-- **Ainda sem HTTPS** — SSL é o próximo passo
+| Container | Status | Detalhe |
+|-----------|--------|---------|
+| `casa-web` | ✅ Up | Next.js 15, porta 3010 externa → 3000 interna |
+| `casa-worker` | ✅ Up | BullMQ + tsx, crons registrados |
+| `casa-postgres` | ✅ Healthy | PostgreSQL 16, migrations aplicadas |
+| `casa-redis` | ✅ Healthy | Redis 7, appendonly ativo |
 
-#### `.env`
-Variáveis configuradas:
-- `POSTGRES_PASSWORD` — senha gerada
-- `NEXTAUTH_URL=https://app.casadolicitante.com.br`
-- `NEXTAUTH_SECRET` — gerado com `openssl rand -base64 32`
-- Demais chaves (Stripe, R2, Resend, Evolution, Google OAuth) — em branco, preencher conforme necessário
+### 4. Nginx — Configuração Multi-Projeto
 
-#### `scripts/entrypoint-web.sh`
-- Roda `prisma migrate deploy` antes de iniciar o Next.js
-- Garante que o banco sempre está atualizado ao subir o container
+O VPS já tinha o **BadgeOne** rodando com nginx na porta 80.
+Solução: configuramos o nginx do BadgeOne para também rotear `app.casadolicitante.com.br`:
+
+- Arquivo modificado: `/root/app-badgeone-/nginx/default.conf`
+- BadgeOne continua funcionando normalmente (server_name separado)
+- `app.casadolicitante.com.br` → proxy para `casa-web:3000`
+- Nginx do BadgeOne conectado à rede Docker `app-casa-do-licitante_app-network`
+
+### 5. Bugs Corrigidos no Código (com push no GitHub)
+
+| Commit | O que foi corrigido |
+|--------|---------------------|
+| `fix(worker): fix ioredis ESM import` | `import IORedis` → `import { Redis }` para ESM/NodeNext |
+| `fix(gov-apis): remove fetch options` | Removeu `next: { revalidate }` e `cache:` incompatíveis com Node.js |
+| `fix(packages): add build script` | Adicionou script `build` e `"type": "module"` em domain e gov-apis |
+| `fix(worker): fix ESM/CJS interop` | Nomes de fila com `:` → `-` (BullMQ não aceita dois-pontos) |
+| `fix(worker): local Prisma client` | Worker criou `src/db.ts` próprio, sem `server-only` do Next.js |
+| `fix(worker): add @prisma/client` | `@prisma/client` adicionado como dep direta do worker |
+| `fix(db): standard @prisma/client` | Removeu output customizado do schema.prisma → usa caminho padrão |
 
 ---
 
 ## 🔲 O QUE AINDA PRECISA SER FEITO
 
-### Prioridade ALTA (para o app ir ao ar)
+### Prioridade ALTA — Para o app ficar acessível online
 
-- [ ] **Deploy/Update no Docker Manager** da Hostinger
-  - Acessar painel → Docker Manager → projeto `app-casa-do-licitante` → Deploy/Update
-  - O build demora ~5-10 min na primeira vez
-  - Verificar logs de cada container após subir
-
-- [ ] **DNS apontado** para a VPS
-  - `app.casadolicitante.com.br` → IP da VPS
-  - Verificar no painel de DNS do domínio
+- [ ] **DNS apontado** para o IP da VPS
+  - `app.casadolicitante.com.br` → IP público da VPS
+  - Configurar no painel do provedor do domínio
 
 - [ ] **SSL/HTTPS** em `app.casadolicitante.com.br`
-  - Opção A: Certbot dentro de container (adicionar ao compose)
-  - Opção B: Proxy SSL da Hostinger (mais simples, verificar se disponível)
-  - Após SSL: nginx precisa escutar na 443 também
+  - Opção recomendada: Certbot com renovação automática
+  - Após SSL: nginx precisa escutar na 443 e redirecionar 80 → 443
 
-- [ ] **Verificar migrations** rodam corretamente no primeiro boot
-  - Checar logs do container `casa-web`
+- [ ] **Testar acesso** ao app após DNS propagado
+  - Verificar login/cadastro
+  - Verificar health check: `https://app.casadolicitante.com.br/api/health`
 
-### Prioridade MÉDIA (produto funcional)
+### Prioridade MÉDIA — Produto funcional
 
-- [ ] **Google OAuth** — criar credenciais no Google Cloud Console e preencher:
-  - `GOOGLE_CLIENT_ID`
-  - `GOOGLE_CLIENT_SECRET`
+- [ ] **Google OAuth** — criar no Google Cloud Console:
+  - `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` → preencher no `.env`
 
-- [ ] **Stripe** — preencher chaves para pagamentos:
-  - `STRIPE_SECRET_KEY`
-  - `STRIPE_WEBHOOK_SECRET`
-  - `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
-  - Configurar webhook no Stripe apontando para `https://app.casadolicitante.com.br/api/webhooks/stripe`
+- [ ] **Stripe** — preencher chaves no `.env`:
+  - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+  - Webhook: `https://app.casadolicitante.com.br/api/webhooks/stripe`
 
-- [ ] **Resend** — preencher `RESEND_API_KEY` para envio de e-mails
+- [ ] **Resend** — `RESEND_API_KEY` para envio de e-mails transacionais
 
-- [ ] **Cloudflare R2** — preencher credenciais para armazenamento de editais:
+- [ ] **Cloudflare R2** — armazenamento de editais:
   - `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`
 
 - [ ] **Portal Transparência API** — `TRANSPARENCIA_API_KEY` (CEIS/CNEP)
 
-### Prioridade MÉDIA (produto — features)
+### Prioridade MÉDIA — Features do produto
 
-- [ ] **Dashboard com dados reais** do banco (licitações vindas do worker)
-- [ ] **Worker de ingestão ativo** — PNCP + ComprasNet rodando em schedule
-- [ ] **Sistema de alertas** — e-mail/WhatsApp quando nova licitação bater nos filtros do usuário
-- [ ] **Detalhe canônico de licitação** — página com todas as informações, itens, edital
+- [ ] **Worker de ingestão ativo** — PNCP + ComprasNet rodando em schedule real
+- [ ] **Dashboard com dados reais** do banco
+- [ ] **Sistema de alertas** — e-mail/WhatsApp quando licitação bate em filtros
+- [ ] **Detalhe canônico de licitação** — página com itens, edital, contratos
 
-### Prioridade BAIXA (crescimento)
+### Prioridade BAIXA — Crescimento
 
 - [ ] **Landing page** em `casadolicitante.com.br`
   - Apresentação do produto, preços, CTA para `app.casadolicitante.com.br`
-  - Pode ser um segundo serviço no compose ou app separado
-
 - [ ] **Enriquecimento com IA** — análise de editais, scoring de oportunidades
 - [ ] **Integração IBGE** — dados de capacidade de municípios, terceiro setor
 - [ ] **Observabilidade** — logs estruturados, métricas do worker, alertas de falha
@@ -129,27 +122,34 @@ Variáveis configuradas:
 ```
 Internet
    │
-   ▼
-nginx (porta 80) ──── [SSL pendente] ────► 443
-   │
-   ▼
-web (Next.js 15 — porta 3000)
-   │                    │
-   ▼                    ▼
-postgres            redis
-(PostgreSQL 16)     (Redis 7)
-                        ▲
-                        │
-                   worker (BullMQ)
+   ▼ porta 80
+badgeone_nginx (nginx compartilhado)
+   │                          │
+   │ server_name badgeone     │ server_name app.casadolicitante.com.br
+   ▼                          ▼
+badgeone_frontend         casa-web:3000 (Next.js 15)
+                               │              │
+                               ▼              ▼
+                          casa-postgres   casa-redis
+                          (PostgreSQL 16) (Redis 7)
+                                              ▲
+                                              │
+                                         casa-worker
+                                         (BullMQ + tsx)
 ```
+
+**Redes Docker:**
+- `app-badgeone-_default` — rede interna do BadgeOne
+- `app-casa-do-licitante_app-network` — rede interna do Casa do Licitante
+- `badgeone_nginx` está conectado às **duas redes** para rotear ambos os apps
 
 **Monorepo Turborepo:**
 ```
 apps/web     → Next.js 15 + NextAuth + Prisma + Stripe + BullMQ
-apps/worker  → BullMQ jobs: ingestão PNCP, ComprasNet, alertas
-packages/db        → Prisma schema + client
-packages/domain    → tipos e enums compartilhados
-packages/gov-apis  → conectores PNCP, ComprasNet
+apps/worker  → BullMQ jobs com tsx (sem compilação prévia)
+packages/db        → Prisma schema + client (output padrão @prisma/client)
+packages/domain    → tipos e enums (type: module, ESM puro)
+packages/gov-apis  → conectores PNCP, ComprasNet (type: module, ESM puro)
 ```
 
 ---
@@ -158,9 +158,10 @@ packages/gov-apis  → conectores PNCP, ComprasNet
 
 | Path | O quê |
 |------|-------|
-| `/docker/app-casa-do-licitante/` | Raiz do Docker Manager (docker-compose + source) |
-| `/docker/app-casa-do-licitante/.env` | Variáveis de ambiente (NUNCA commitar) |
+| `/docker/app-casa-do-licitante/` | Raiz do Docker Manager (compose + source + .env) |
+| `/docker/app-casa-do-licitante/.env` | Variáveis de ambiente — **NUNCA commitar** |
 | `/root/app-casa-do-licitante/` | Clone do repositório Git |
+| `/root/app-badgeone-/nginx/default.conf` | Config nginx compartilhado (BadgeOne + Casa do Licitante) |
 
 ---
 
@@ -170,13 +171,17 @@ packages/gov-apis  → conectores PNCP, ComprasNet
 
 - `POSTGRES_PASSWORD` ✓
 - `NEXTAUTH_URL=https://app.casadolicitante.com.br` ✓
-- `NEXTAUTH_SECRET` ✓
+- `NEXTAUTH_SECRET` ✓ (gerado com openssl rand -base64 32)
 
 ---
 
-## 📝 NOTAS TÉCNICAS
+## 📝 NOTAS TÉCNICAS IMPORTANTES
 
-- O `.env` do Docker Manager **não vai para o Git** (está no .gitignore)
-- As APIs opcionais (Stripe, R2, etc.) têm fallback `:-` no compose — não quebram o build se estiverem em branco
-- O Prisma usa `migrate deploy` (modo produção) no entrypoint — nunca `migrate dev`
-- O worker usa ESM (`"type": "module"`) — entry point é `node apps/worker/dist/index.js`
+- **Worker usa `tsx`** — executa TypeScript direto sem compilar. Entry point: `tsx apps/worker/src/index.ts`
+- **Worker tem `src/db.ts` próprio** — não usa `@casa/db` (que tem `server-only` do Next.js)
+- **Prisma output é o padrão** — `prisma generate` gera em `node_modules/.prisma/client`
+- **BullMQ queue names sem `:`** — usar `-` como separador (ex: `ingest-pncp`)
+- **packages/domain e gov-apis são ESM** — têm `"type": "module"` para compatibilidade com worker
+- **nginx compartilhado** — qualquer alteração no arquivo `/root/app-badgeone-/nginx/default.conf` requer rebuild do `badgeone_nginx`
+- **Migrations** — rodam automaticamente via `entrypoint-web.sh` quando o container `casa-web` sobe
+- **Porta 3010** — `casa-web` exposta externamente na 3010 (3000 interna). Nginx roteia para porta interna.
