@@ -1,4 +1,5 @@
 import NextAuth from 'next-auth';
+import type { NextAuthRequest } from 'next-auth';
 import { authConfig } from '@/auth.config';
 import { NextResponse } from 'next/server';
 
@@ -6,7 +7,7 @@ const { auth } = NextAuth(authConfig);
 
 const APP_ROUTES = /^\/(dashboard|licitacoes|contratos|fornecedores|ferramentas|alertas)(\/|$)/;
 
-export default auth((req) => {
+function middleware(req: NextAuthRequest): NextResponse {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
 
@@ -21,7 +22,9 @@ export default auth((req) => {
   }
 
   return NextResponse.next();
-});
+}
+
+export default auth(middleware);
 
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|api/health|api/auth).*)'],
