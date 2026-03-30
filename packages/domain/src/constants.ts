@@ -52,15 +52,15 @@ export const SOURCE_LIST = [
   { id: 'comprasnet', label: 'ComprasNet — Licitações' },
 ] as const;
 
-/** BullMQ queue names */
+/** BullMQ queue names — sem dois-pontos (BullMQ não permite) */
 export const QUEUE = {
-  INGEST_PNCP: 'ingest:pncp',
-  INGEST_COMPRASNET: 'ingest:comprasnet',
-  VALIDATE_CNPJ: 'validate:cnpj',
-  VALIDATE_CERTIDOES: 'validate:certidoes',
-  VALIDATE_SANCOES: 'validate:sancoes',
-  ALERT_MATCH: 'alert:match',
-  ALERT_DELIVER: 'alert:deliver',
-  ALERT_DEADLINES: 'alert:deadlines',
-  DOCS_EXTRACT: 'docs:extract',
+  INGEST_PNCP: 'ingest-pncp',
+  INGEST_COMPRASNET: 'ingest-comprasnet',
+  VALIDATE_CNPJ: 'validate-cnpj',
+  VALIDATE_CERTIDOES: 'validate-certidoes',
+  VALIDATE_SANCOES: 'validate-sancoes',
+  ALERT_MATCH: 'alert-match',
+  ALERT_DELIVER: 'alert-deliver',
+  ALERT_DEADLINES: 'alert-deadlines',
+  DOCS_EXTRACT: 'docs-extract',
 } as const;

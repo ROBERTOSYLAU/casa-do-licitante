@@ -2,11 +2,9 @@
   "name": "@casa/gov-apis",
   "version": "0.0.1",
   "private": true,
+  "type": "module",
   "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "default": "./src/index.ts"
-    }
+    ".": "./src/index.ts"
   },
   "scripts": {
     "build": "tsc",
