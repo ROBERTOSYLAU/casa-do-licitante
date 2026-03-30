@@ -1,5 +1,5 @@
 import 'server-only';
-import { PrismaClient } from './generated/prisma/index.js';
+import { PrismaClient } from '@prisma/client';
 
 // Singleton pattern — prevents multiple Prisma instances in dev hot reload
 const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
@@ -18,5 +18,4 @@ if (process.env['NODE_ENV'] !== 'production') {
 }
 
 export { PrismaClient };
-// Re-export generated types for convenience
-export * from './generated/prisma/index.js';
+export * from '@prisma/client';
