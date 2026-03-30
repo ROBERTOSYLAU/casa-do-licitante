@@ -30,6 +30,9 @@ export type Modalidade =
 
 export type DataSource = 'pncp' | 'comprasnet';
 
+/** Used only in search filter UI — includes the "all sources" option */
+export type DataSourceFilter = DataSource | 'ambos';
+
 export type UserRole = 'admin' | 'analyst' | 'viewer';
 
 export type PlanSlug = 'observador' | 'executor' | 'estrategico';
@@ -51,7 +54,7 @@ export interface SearchFilters {
   dataFinal?: string;
   valorMin?: number; // centavos
   valorMax?: number; // centavos
-  source?: DataSource;
+  source?: DataSourceFilter;
   page?: number;
 }
 

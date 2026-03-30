@@ -29,15 +29,38 @@ export default async function LicitacaoDetailPage({
 }) {
   const { id } = await params;
   const query = await searchParams;
-  const qp = new URLSearchParams();
 
-  for (const [key, value] of Object.entries(query)) {
-    if (typeof value === 'string') qp.set(key, value);
+  function sp(key: string, fallback = '') {
+    const v = query[key];
+    return typeof v === 'string' ? v : fallback;
   }
 
-  const detailUrl = `/api/licitacoes/${id}?${qp.toString()}`;
-  const res = await fetch(detailUrl, { cache: 'no-store' });
-  const detail = await res.json();
+  const detail = {
+    id,
+    source: sp('source'),
+    sourceId: sp('sourceId', id),
+    objeto: sp('objeto', 'Licitação sem título informado'),
+    orgaoNome: sp('orgaoNome', 'Órgão não informado'),
+    uf: sp('uf', '-'),
+    municipio: sp('municipio'),
+    modalidade: sp('modalidade', 'outro'),
+    status: sp('status', 'aberta'),
+    dataAbertura: sp('dataAbertura') || null,
+    dataEncerramentoPropostas: sp('dataEncerramentoPropostas') || null,
+    valorEstimado: sp('valorEstimado') ? Number(sp('valorEstimado')) : null,
+    resumo:
+      'Detalhe montado a partir da busca atual, pronto para evoluir depois para leitura canônica do banco e enriquecimento com itens, edital e histórico.',
+    timeline: [
+      {
+        titulo: 'Registro encontrado',
+        descricao: 'Oportunidade localizada nas fontes governamentais integradas.',
+      },
+      {
+        titulo: 'Análise inicial',
+        descricao: 'Use esta tela para validar órgão, modalidade, datas e potencial comercial antes de acompanhar.',
+      },
+    ],
+  };
 
   return (
     <div className="space-y-6">

@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UF_LIST, MODALIDADE_LIST, SOURCE_LIST } from '@casa/domain';
-import type { SearchFilters } from '@casa/domain';
+import type { SearchFilters, DataSourceFilter } from '@casa/domain';
 
 interface Props {
   onSearch: (filters: SearchFilters) => void;
@@ -24,7 +24,7 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
   const [date, setDate] = useState<Date | undefined>();
   const [uf, setUf] = useState('');
   const [modalidade, setModalidade] = useState('');
-  const [source, setSource] = useState<SearchFilters['source']>('pncp');
+  const [source, setSource] = useState<DataSourceFilter>('ambos');
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -42,9 +42,9 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
     setDate(undefined);
     setUf('');
     setModalidade('');
-    setSource('pncp');
+    setSource('ambos');
     (document.getElementById('search-form') as HTMLFormElement)?.reset();
-    onSearch({ source: 'pncp' });
+    onSearch({ source: 'ambos' });
   }
 
   return (
@@ -66,7 +66,7 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
               <button
                 key={s.id}
                 type="button"
-                onClick={() => setSource(s.id as SearchFilters['source'])}
+                onClick={() => setSource(s.id as DataSourceFilter)}
                 className={cn(
                   'rounded-full border-2 px-4 py-2 text-sm transition-all duration-200',
                   source === s.id

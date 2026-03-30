@@ -79,7 +79,8 @@ async function fetchByModalidade(
   filters: SearchFilters,
 ): Promise<LicitacaoSearchResult[]> {
   const today = new Date().toISOString().slice(0, 10);
-  const dataInicial = toApiDate(filters.dataInicial ?? today);
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+  const dataInicial = toApiDate(filters.dataInicial ?? sevenDaysAgo);
   const dataFinal = toApiDate(filters.dataFinal ?? today);
 
   const params = new URLSearchParams({
