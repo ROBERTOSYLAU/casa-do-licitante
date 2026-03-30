@@ -69,7 +69,7 @@ export async function fetchPncpBids(
 
   const res = await fetch(
     `${BASE}/contratacoes/publicacao?${params.toString()}`,
-    { next: { revalidate: 300 } }, // 5-min edge cache
+    { cache: 'no-store' },
   );
 
   if (!res.ok) {

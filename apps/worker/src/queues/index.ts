@@ -1,10 +1,10 @@
 import { Queue } from 'bullmq';
-import IORedis from 'ioredis';
+import { Redis } from 'ioredis';
 import { QUEUE } from '@casa/domain';
 
 const redisUrl = process.env['REDIS_URL'] ?? 'redis://localhost:6379';
 
-export const redis = new IORedis(redisUrl, { maxRetriesPerRequest: null });
+export const redis = new Redis(redisUrl, { maxRetriesPerRequest: null });
 
 function makeQueue(name: string) {
   return new Queue(name, { connection: redis });
