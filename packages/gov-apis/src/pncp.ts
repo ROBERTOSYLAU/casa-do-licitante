@@ -94,9 +94,11 @@ async function fetchByModalidade(
   if (filters.uf) params.set('ufSigla', filters.uf);
 
   const res = await fetch(`${BASE}/contratacoes/publicacao?${params.toString()}`);
-  if (!res.ok) return [];
+  if (!res.ok || res.status === 204) return [];
 
-  const body = (await res.json()) as PncpResponse;
+  const text = await res.text();
+  if (!text) return [];
+  const body = JSON.parse(text) as PncpResponse;
   const items = body.data ?? [];
 
   const keyword = filters.keyword?.toLowerCase();
