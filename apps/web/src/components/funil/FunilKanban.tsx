@@ -314,7 +314,7 @@ export default function FunilKanban() {
           <h3 className="text-lg font-semibold text-white">Funil vazio</h3>
           <p className="mt-2 text-white/50 text-sm max-w-md mx-auto">
             Vá até <strong className="text-white">Pesquisa de Licitações</strong> e clique em{' '}
-            <strong className="text-white">"Adicionar ao Funil"</strong> em qualquer resultado para começar a acompanhar oportunidades aqui.
+            <strong className="text-white">&quot;Adicionar ao Funil&quot;</strong> em qualquer resultado para começar a acompanhar oportunidades aqui.
           </p>
         </div>
       )}
