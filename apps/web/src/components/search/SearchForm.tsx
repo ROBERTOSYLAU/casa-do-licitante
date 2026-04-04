@@ -180,7 +180,7 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
                       {date ? format(date, 'PPP', { locale: ptBR }) : 'Qualquer data'}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0 bg-slate-800 border-slate-700 text-white">
+                  <PopoverContent className="w-[320px] p-2 bg-slate-800 border-slate-700 text-white">
                     <Calendar mode="single" selected={date} onSelect={setDate} locale={ptBR} />
                   </PopoverContent>
                 </Popover>

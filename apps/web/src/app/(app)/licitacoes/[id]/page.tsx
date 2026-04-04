@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft, Building2, CalendarDays, Landmark, MapPin, Sparkles, WalletCards } from 'lucide-react';
+import { ArrowLeft, Building2, CalendarDays, Hash, Landmark, MapPin, ShieldCheck, Sparkles, WalletCards } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,11 +36,12 @@ export default async function LicitacaoDetailPage({
   }
 
   const detail = {
-    id,
+    id: decodeURIComponent(id),
     source: sp('source'),
-    sourceId: sp('sourceId', id),
+    sourceId: sp('sourceId', decodeURIComponent(id)),
     objeto: sp('objeto', 'Licitação sem título informado'),
     orgaoNome: sp('orgaoNome', 'Órgão não informado'),
+    orgaoUasg: sp('orgaoUasg'),
     uf: sp('uf', '-'),
     municipio: sp('municipio'),
     modalidade: sp('modalidade', 'outro'),
@@ -49,15 +50,15 @@ export default async function LicitacaoDetailPage({
     dataEncerramentoPropostas: sp('dataEncerramentoPropostas') || null,
     valorEstimado: sp('valorEstimado') ? Number(sp('valorEstimado')) : null,
     resumo:
-      'Detalhe montado a partir da busca atual, pronto para evoluir depois para leitura canônica do banco e enriquecimento com itens, edital e histórico.',
+      'Leitura inicial da oportunidade com foco em triagem, contexto institucional e validação rápida antes da análise aprofundada.',
     timeline: [
       {
-        titulo: 'Registro encontrado',
-        descricao: 'Oportunidade localizada nas fontes governamentais integradas.',
+        titulo: 'Registro localizado',
+        descricao: 'A oportunidade foi encontrada nas fontes públicas integradas da plataforma.',
       },
       {
-        titulo: 'Análise inicial',
-        descricao: 'Use esta tela para validar órgão, modalidade, datas e potencial comercial antes de acompanhar.',
+        titulo: 'Triagem operacional',
+        descricao: 'Valide objeto, órgão, datas, modalidade, localização e potencial comercial antes de acompanhar.',
       },
     ],
   };
@@ -71,18 +72,18 @@ export default async function LicitacaoDetailPage({
       </Link>
 
       <section className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 via-blue-950 to-emerald-950 p-6 shadow-[0_20px_60px_rgba(0,0,0,0.25)]">
-        <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="mb-4 flex flex-wrap items-center gap-2">
           <Badge>{detail.source?.toUpperCase?.() || 'FONTE'}</Badge>
           <Badge variant="secondary">{detail.status}</Badge>
           <Badge variant="secondary">{formatModalidade(detail.modalidade)}</Badge>
         </div>
 
-        <h1 className="text-3xl font-bold text-white leading-tight max-w-5xl">{detail.objeto}</h1>
-        <p className="mt-3 text-white/70 max-w-3xl">{detail.resumo}</p>
+        <h1 className="max-w-5xl text-3xl font-bold leading-tight text-white">{detail.objeto}</h1>
+        <p className="mt-3 max-w-3xl text-white/70">{detail.resumo}</p>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-white/50 text-xs uppercase tracking-[0.18em]">Órgão</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Órgão</p>
             <div className="mt-2 flex items-start gap-2 text-white">
               <Building2 className="mt-0.5 h-4 w-4 text-blue-300" />
               <span>{detail.orgaoNome}</span>
@@ -90,7 +91,7 @@ export default async function LicitacaoDetailPage({
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-white/50 text-xs uppercase tracking-[0.18em]">Localidade</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Localidade</p>
             <div className="mt-2 flex items-start gap-2 text-white">
               <MapPin className="mt-0.5 h-4 w-4 text-emerald-300" />
               <span>{detail.municipio ? `${detail.municipio}/${detail.uf}` : detail.uf}</span>
@@ -98,15 +99,7 @@ export default async function LicitacaoDetailPage({
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-white/50 text-xs uppercase tracking-[0.18em]">Abertura</p>
-            <div className="mt-2 flex items-start gap-2 text-white">
-              <CalendarDays className="mt-0.5 h-4 w-4 text-cyan-300" />
-              <span>{formatDateBR(detail.dataAbertura)}</span>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <p className="text-white/50 text-xs uppercase tracking-[0.18em]">Valor estimado</p>
+            <p className="text-xs uppercase tracking-[0.18em] text-white/50">Valor estimado</p>
             <div className="mt-2 flex items-start gap-2 text-white">
               <WalletCards className="mt-0.5 h-4 w-4 text-yellow-300" />
               <span>{detail.valorEstimado != null ? formatBRL(detail.valorEstimado) : 'Sob consulta'}</span>
@@ -118,50 +111,73 @@ export default async function LicitacaoDetailPage({
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Leitura executiva</CardTitle>
+            <CardTitle>Identificação e contexto</CardTitle>
             <CardDescription>
-              Visão rápida para decidir se a oportunidade merece acompanhamento ativo.
+              Dados essenciais para confirmar se o clique levou para a oportunidade correta.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 text-white/80">
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <div className="flex items-center gap-2 text-white font-medium mb-2">
-                <Landmark className="h-4 w-4 text-blue-300" />
-                Identificação da oportunidade
+              <div className="mb-2 flex items-center gap-2 font-medium text-white">
+                <Hash className="h-4 w-4 text-cyan-300" />
+                Número e identificação
               </div>
               <p>ID interno: {detail.id}</p>
               <p>ID da fonte: {detail.sourceId}</p>
+              {detail.orgaoUasg && <p>UASG: {detail.orgaoUasg}</p>}
+              <p>Portal/Fonte: {detail.source?.toUpperCase?.() || '-'}</p>
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <div className="flex items-center gap-2 text-white font-medium mb-2">
-                <Sparkles className="h-4 w-4 text-emerald-300" />
-                Próximos passos recomendados
+              <div className="mb-2 flex items-center gap-2 font-medium text-white">
+                <CalendarDays className="h-4 w-4 text-emerald-300" />
+                Datas principais
               </div>
-              <ul className="list-disc pl-5 space-y-2">
-                <li>Confirmar aderência do objeto ao portfólio da empresa.</li>
-                <li>Validar prazo de abertura/encerramento para operação comercial.</li>
-                <li>Checar exigências técnicas, habilitação e anexos antes do acompanhamento.</li>
-              </ul>
+              <p>Abertura: {formatDateBR(detail.dataAbertura)}</p>
+              <p>Encerramento / disputa: {formatDateBR(detail.dataEncerramentoPropostas)}</p>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="mb-2 flex items-center gap-2 font-medium text-white">
+                <Landmark className="h-4 w-4 text-blue-300" />
+                Classificação da oportunidade
+              </div>
+              <p>Modalidade: {formatModalidade(detail.modalidade)}</p>
+              <p>Status: {detail.status}</p>
+              <p>UF: {detail.uf}</p>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Linha do tempo inicial</CardTitle>
+            <CardTitle>Leitura executiva</CardTitle>
             <CardDescription>
-              Esta área já prepara o terreno para futura integração com banco e enriquecimento automático.
+              Visão rápida para ajudar a triagem e a decisão de acompanhamento.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {(detail.timeline || []).map((step: { titulo: string; descricao: string }, index: number) => (
-              <div key={step.titulo + index} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-white/45">Etapa {index + 1}</p>
-                <h3 className="mt-2 font-semibold text-white">{step.titulo}</h3>
-                <p className="mt-1 text-sm text-white/70">{step.descricao}</p>
+          <CardContent className="space-y-4 text-white/80">
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="mb-2 flex items-center gap-2 font-medium text-white">
+                <Sparkles className="h-4 w-4 text-emerald-300" />
+                Próximos passos recomendados
               </div>
-            ))}
+              <ul className="list-disc space-y-2 pl-5">
+                <li>Confirmar aderência do objeto ao portfólio da empresa.</li>
+                <li>Validar prazo, localidade e complexidade operacional.</li>
+                <li>Checar exigências, documentos e risco antes de seguir para disputa.</li>
+              </ul>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="mb-2 flex items-center gap-2 font-medium text-white">
+                <ShieldCheck className="h-4 w-4 text-yellow-300" />
+                Observação
+              </div>
+              <p>
+                Esta tela ainda está em evolução. O objetivo agora é garantir clique correto, leitura de identificação e contexto suficiente para triagem operacional.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
