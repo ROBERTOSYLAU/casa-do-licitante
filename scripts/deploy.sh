@@ -4,8 +4,17 @@
 set -euo pipefail
 
 APP_DIR="/docker/app-casa-do-licitante"
+REPO_URL="https://github.com/ROBERTOSYLAU/app-casa-do-licitante.git"
 
 echo "==> [$(date -u +%Y-%m-%dT%H:%M:%SZ)] Starting deployment"
+
+# ── First-time setup: clone repo if directory doesn't exist ──────────────────
+if [ ! -d "$APP_DIR/.git" ]; then
+  echo "==> First-time setup: cloning repository..."
+  mkdir -p "$(dirname "$APP_DIR")"
+  git clone "$REPO_URL" "$APP_DIR"
+  echo "==> Clone complete."
+fi
 
 cd "$APP_DIR"
 
