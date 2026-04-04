@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import type { Route } from 'next';
 import { MapPin, Building, Calendar, Clock, Hash, ArrowUpRight, Landmark, LayoutGrid } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatBRL } from '@/lib/utils';
@@ -89,7 +90,7 @@ export default function SearchResults({ results }: Props) {
 
         const dataAbertura = safeDate(licitacao.dataAbertura);
         const dataDisputa = safeDate(licitacao.dataEncerramentoPropostas);
-        const detailPath = `/licitacoes/${encodeURIComponent(licitacao.id)}?${detailQuery}`;
+        const detailPath = `/licitacoes/${encodeURIComponent(licitacao.id)}?${detailQuery}` as Route;
 
         return (
           <Link key={licitacao.id} href={detailPath}>
