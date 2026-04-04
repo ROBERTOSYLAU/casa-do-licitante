@@ -10,8 +10,8 @@ module.exports = {
     {
       name: 'web',
       cwd: './apps/web',
-      script: 'node_modules/.bin/next',
-      args: 'start --port 3000',
+      script: 'npm',
+      args: 'start',
       instances: 1,
       exec_mode: 'fork',
       autorestart: true,
