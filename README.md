@@ -1,12 +1,56 @@
 # 🏛️ App Casa do Licitante
 
-**Atualizado em:** domingo, 29/03/2026 às 01:28 (GMT-3)
+**Atualizado em:** sábado, 04/04/2026 às 16:01 (GMT-3)
 
-Plataforma SaaS para monitoramento, triagem e operação comercial de licitações públicas no Brasil.
+Plataforma SaaS para **inteligência, triagem, análise e operação de licitações públicas no Brasil**.
+
+## Proposta real do produto
+
+O **Casa do Licitante** não deve ser tratado apenas como um buscador de editais.
+
+A proposta oficial do produto é ser uma **central operacional de inteligência para licitantes**, reunindo em um único ambiente:
+- descoberta de oportunidades
+- análise de mercado e contratações futuras
+- leitura territorial e institucional
+- documentos e rotina operacional do cliente
+- apoio jurídico e de disputa
+- dados públicos empresariais, fiscais e municipais
+
+Em termos práticos, o produto precisa cobrir o ciclo do licitante em quatro camadas:
+1. **encontrar** oportunidades
+2. **entender** o contexto comercial e institucional
+3. **organizar** empresa, documentos e rotina
+4. **agir** com apoio operacional e jurídico
+
+---
+
+## Modelo operacional da plataforma
+
+O projeto deve evoluir com dois níveis de acesso principais:
+
+### 1. ADM Master — Casa do Licitante
+Camada interna da operação da plataforma, responsável por:
+- cadastrar clientes
+- gerenciar contas e empresas
+- administrar planos, permissões e ambientes
+- acompanhar uso da plataforma
+- controlar integrações e saúde do sistema
+- validar consistência das APIs e qualidade dos dados
+
+### 2. Cliente / Empresa licitante
+Camada de uso do cliente final, com foco em:
+- busca e filtro de oportunidades
+- análise de mercado e histórico
+- gestão de documentos
+- cadastro de empresas
+- organização da rotina de licitação
+- apoio jurídico e operacional
+
+---
 
 ## Status atual
 
-O projeto já tem base real de produto e pode ser colocado online em VPS com foco em **beta privado / operação assistida**.
+O projeto já tem base real de produto e já entrou em uma fase de **beta privado / operação assistida**, com a aplicação web buildando e rodando.
 
 ### O que já existe
 - monorepo com **Next.js 15 + TypeScript + Turborepo + pnpm**
@@ -30,12 +74,17 @@ O projeto já tem base real de produto e pode ser colocado online em VPS com foc
   - PM2
   - Nginx
   - VPS Hostinger / Ubuntu
+- landing, login, dashboard e busca já melhorados nas rodadas iniciais
+- build do app web validado
 
 ### O que ainda está em evolução
 - detalhe rico e canônico de licitação vindo do banco
 - dashboard totalmente orientado a dados reais
+- camada ADM Master para gestão dos clientes da plataforma
+- watchlist, favoritos e organização operacional do cliente
 - contratos e fornecedores em camada de produto completa
 - observabilidade forte da ingestão
+- worker pronto para produção com build/start fechados
 - enriquecimento com IA, editais e automações comerciais
 
 ---
@@ -45,17 +94,77 @@ O projeto já tem base real de produto e pode ser colocado online em VPS com foc
 ```bash
 app-casa-do-licitante/
 ├── apps/
-│   ├── web/              # aplicação principal Next.js
+│   ├── web/              # aplicação principal Next.js (frontend + server routes)
 │   └── worker/           # ingestão e rotinas assíncronas
 ├── packages/
 │   ├── db/               # Prisma schema + client
 │   ├── domain/           # tipos e contratos de domínio
 │   └── gov-apis/         # conectores das APIs públicas
+├── docs/                 # roadmap, próximos passos e documentação operacional
 ├── nginx/                # proxy reverso
 ├── scripts/              # setup e deploy VPS
 ├── ecosystem.config.cjs  # PM2
 └── turbo.json            # orquestração do monorepo
 ```
+
+---
+
+## Fontes e APIs públicas estratégicas
+
+A diretriz oficial do produto é:
+- **fase 1:** usar APIs públicas
+- **fase 2:** integrar APIs pagas onde fizer sentido
+
+### Já integradas
+- PNCP
+- ComprasNet
+
+### Fontes públicas estratégicas previstas
+- CNPJ / CNAE
+- IBGE / municípios / dados territoriais
+- CAPAG
+- NCM / classificação de produto
+- IPTU / ITR / dados municipais e territoriais públicos
+- bases públicas correlatas úteis para licitação, diligência e inteligência comercial
+
+### Regra de qualidade de dados
+Essas integrações só geram valor real se entregarem:
+- dados válidos
+- dados consistentes
+- filtros confiáveis
+- leitura comercial útil
+- contexto institucional e territorial
+
+Ou seja: não basta “puxar API”. É preciso transformar dados públicos em inteligência operacional utilizável pelo cliente.
+
+---
+
+## O que diferencia o produto
+
+O Casa do Licitante deve evoluir para além de “mais uma base de edital”.
+
+### Diferenciais esperados
+- busca mais rica e precisa
+- leitura comercial da oportunidade
+- score de atratividade
+- score de risco
+- análise de mercado e contratações futuras
+- inteligência territorial e institucional
+- documentos e rotina da empresa licitante
+- apoio jurídico e operacional
+- contexto por empresa, município, órgão, categoria e produto
+
+---
+
+## Referência funcional absorvida
+
+A plataforma de referência analisada mostrou uma direção madura de produto em quatro frentes:
+- **Oportunidades**
+- **Análise**
+- **Negócios / Empresas / Documentos**
+- **Jurídico / Disputa**
+
+Isso reforça que o Casa do Licitante deve crescer como uma **mesa de operação do licitante**, e não apenas como uma tela de busca.
 
 ---
 
@@ -107,6 +216,8 @@ Se for usar deploy em produção, valide também:
 - configuração do Nginx
 - PM2
 - estratégia de build/deploy do worker
+- variáveis da camada de autenticação
+- saúde da conectividade com APIs públicas
 
 ---
 
@@ -121,15 +232,45 @@ O projeto já inclui base para deploy com:
 ### Fluxo típico
 
 ```bash
-cd /var/www/app-casa-do-licitante
+cd /root/app-casa-do-licitante
 git pull origin main
 pnpm install --frozen-lockfile
-pnpm db:generate
-pnpm db:migrate
-pnpm build
+pnpm --filter @casa/db db:generate
+pnpm --filter @casa/db db:migrate
+pnpm --filter @casa/web build
 pm2 reload ecosystem.config.cjs --env production
 sudo systemctl reload nginx
 ```
+
+---
+
+## Prioridades práticas agora
+
+### P0 — estabilização online
+- garantir web estável em produção
+- corrigir worker para produção
+- validar autenticação
+- validar rotas API
+- validar busca real no navegador
+
+### P1 — núcleo do produto
+- fortalecer filtros e precisão da busca
+- melhorar detalhe da licitação
+- aproximar resultado de busca de uma triagem profissional
+- melhorar dashboard com dados reais
+
+### P2 — estrutura de negócio
+- criar camada ADM Master
+- cadastrar clientes e empresas
+- preparar multi-tenant com mais clareza
+- organizar permissões, perfis e rotinas
+
+### P3 — inteligência pública
+- CNPJ / CNAE
+- IBGE / municípios
+- CAPAG
+- NCM
+- IPTU / ITR / dados territoriais públicos
 
 ---
 
@@ -139,11 +280,13 @@ Este projeto está mais próximo de:
 - **produto SaaS em beta privado**, do que
 - simples protótipo visual.
 
-O próximo salto de valor está em fechar 4 pilares:
+O próximo salto de valor está em fechar os pilares abaixo:
 1. busca + detalhe consistente
 2. persistência canônica no banco
 3. rotina de ingestão observável
 4. dashboard/alertas com utilidade comercial real
+5. camada ADM Master
+6. base pública forte e confiável para inteligência do licitante
 
 ---
 
