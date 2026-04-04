@@ -50,6 +50,7 @@ export interface SearchFilters {
   uf?: string;
   municipio?: string;
   modalidade?: string;
+  periodoTipo?: 'abertura' | 'publicacao';
   dataInicial?: string; // ISO date yyyy-MM-dd
   dataFinal?: string;
   valorMin?: number; // centavos
@@ -73,6 +74,7 @@ export interface LicitacaoSearchResult {
   valorEstimado?: number;
   dataAbertura?: string;
   dataEncerramentoPropostas?: string;
+  link?: string;
 }
 
 // -- Licitacao detail --

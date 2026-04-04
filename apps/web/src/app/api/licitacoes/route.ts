@@ -8,9 +8,10 @@ export async function GET(req: NextRequest) {
     keyword: searchParams.get('keyword') ?? undefined,
     uf: searchParams.get('uf') ?? undefined,
     modalidade: searchParams.get('modalidade') ?? undefined,
+    periodoTipo: (searchParams.get('periodoTipo') as SearchFilters['periodoTipo']) ?? undefined,
     dataInicial: searchParams.get('dataInicial') ?? undefined,
     dataFinal: searchParams.get('dataFinal') ?? undefined,
-    source: (searchParams.get('source') as SearchFilters['source']) ?? 'ambos' as const,
+    source: (searchParams.get('source') as SearchFilters['source']) ?? ('ambos' as const),
   };
 
   try {

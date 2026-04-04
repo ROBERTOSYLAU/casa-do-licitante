@@ -232,13 +232,22 @@ export default function SearchResults({ results }: Props) {
                       {licitacao.valorEstimado != null ? formatBRL(licitacao.valorEstimado) : 'Sob consulta'}
                     </p>
                   </div>
-                  <div className="flex flex-row lg:flex-col items-center gap-2">
+                  <div className="flex flex-col lg:items-end gap-2">
                     <AddToFunilButton licitacao={licitacao} />
-                    <Link href={detailPath}>
-                      <span className="inline-flex items-center gap-1 rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-300 hover:bg-blue-500/20 transition">
-                        Detalhes <ArrowUpRight className="h-3.5 w-3.5" />
-                      </span>
-                    </Link>
+                    <div className="flex flex-row items-center gap-2 mt-1">
+                      <Link href={detailPath}>
+                        <span className="inline-flex items-center gap-1 rounded-full border border-blue-400/20 bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-300 hover:bg-blue-500/20 transition">
+                          Detalhes
+                        </span>
+                      </Link>
+                      {licitacao.link && (
+                        <a href={licitacao.link} target="_blank" rel="noopener noreferrer" title="Abrir no portal oficial">
+                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-300 hover:bg-emerald-500/20 transition">
+                            Acessar <ArrowUpRight className="h-3.5 w-3.5" />
+                          </span>
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

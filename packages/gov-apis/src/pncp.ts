@@ -77,6 +77,15 @@ function getDateWindow(filters: SearchFilters) {
   const today = new Date();
   const plusThirty = new Date(Date.now() + 30 * 86400000);
 
+  if (filters.periodoTipo === 'abertura') {
+     const dtFinal = filters.dataFinal ? new Date(filters.dataFinal) : plusThirty;
+     const dtInicial = new Date(dtFinal.getTime() - 30 * 86400000);
+     return {
+       dataInicial: toApiDate(dtInicial.toISOString().slice(0, 10)),
+       dataFinal: toApiDate(dtFinal.toISOString().slice(0, 10)),
+     };
+  }
+
   const dataInicial = filters.dataInicial ?? today.toISOString().slice(0, 10);
   const dataFinal = filters.dataFinal ?? filters.dataInicial ?? plusThirty.toISOString().slice(0, 10);
 
@@ -120,6 +129,16 @@ async function fetchByModalidade(modalidade: number, filters: SearchFilters): Pr
       return keywordTerms.every((term: string) => obj.includes(term));
     })
     .filter((l) => !filters.modalidade || normalizePncpModalidade(l.modalidadeNome) === filters.modalidade)
+    .filter((l) => {
+       if (filters.periodoTipo === 'abertura' && (filters.dataInicial || filters.dataFinal)) {
+         const abert = l.dataAberturaProposta;
+         if (!abert) return false;
+         const abertDate = abert.slice(0, 10);
+         if (filters.dataInicial && abertDate < filters.dataInicial) return false;
+         if (filters.dataFinal && abertDate > filters.dataFinal) return false;
+       }
+       return true;
+    })
     .map((l) => ({
       id: `pncp-${l.numeroControlePNCP}`,
       source: 'pncp' as const,
@@ -134,6 +153,7 @@ async function fetchByModalidade(modalidade: number, filters: SearchFilters): Pr
       valorEstimado: l.valorTotalEstimado != null ? Math.round(l.valorTotalEstimado * 100) : undefined,
       dataAbertura: l.dataAberturaProposta ?? l.dataPublicacaoPncp,
       dataEncerramentoPropostas: l.dataEncerramentoProposta,
+      link: l.numeroControlePNCP ? `https://pncp.gov.br/app/editais/${l.numeroControlePNCP}` : undefined,
     }));
 }
 

@@ -71,6 +71,16 @@ function getDateWindow(filters: SearchFilters) {
   const today = new Date();
   const plusThirty = new Date(Date.now() + 30 * 86400000);
 
+  if (filters.periodoTipo === 'abertura') {
+     const dtFinal = filters.dataFinal ? new Date(filters.dataFinal) : plusThirty;
+     // Extend to 60 days back for complete coverage
+     const dtInicial = new Date(dtFinal.getTime() - 60 * 86400000);
+     return {
+       dataInicial: dtInicial.toISOString().slice(0, 10),
+       dataFinal: dtFinal.toISOString().slice(0, 10),
+     };
+  }
+
   return {
     dataInicial: filters.dataInicial ?? today.toISOString().slice(0, 10),
     dataFinal: filters.dataFinal ?? filters.dataInicial ?? plusThirty.toISOString().slice(0, 10),
@@ -107,6 +117,16 @@ async function fetchByCodigoModalidade(codigoModalidade: number, filters: Search
       return keywordTerms.every((term: string) => obj.includes(term));
     })
     .filter((l) => !filters.modalidade || normalizeModalidade(l.modalidadeNome) === filters.modalidade)
+    .filter((l) => {
+       if (filters.periodoTipo === 'abertura' && (filters.dataInicial || filters.dataFinal)) {
+         const abert = l.dataAberturaPropostaPncp;
+         if (!abert) return false;
+         const abertDate = abert.slice(0, 10);
+         if (filters.dataInicial && abertDate < filters.dataInicial) return false;
+         if (filters.dataFinal && abertDate > filters.dataFinal) return false;
+       }
+       return true;
+    })
     .map((l) => ({
       id: `comprasnet-${l.numeroControlePNCP ?? l.idCompra}`,
       source: 'comprasnet' as const,
@@ -121,6 +141,7 @@ async function fetchByCodigoModalidade(codigoModalidade: number, filters: Search
       valorEstimado: l.valorTotalEstimado != null ? Math.round(l.valorTotalEstimado * 100) : undefined,
       dataAbertura: l.dataAberturaPropostaPncp ?? l.dataPublicacaoPncp ?? '',
       dataEncerramentoPropostas: l.dataEncerramentoPropostaPncp,
+      link: l.idCompra ? `https://cnetmobile.estaleiro.serpro.gov.br/comprasnet-web/public/compras/acompanhamento-compra?compra=${l.idCompra}` : (l.numeroControlePNCP ? `https://pncp.gov.br/app/editais/${l.numeroControlePNCP}` : undefined),
     }));
 }
 

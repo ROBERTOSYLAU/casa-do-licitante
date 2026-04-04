@@ -39,6 +39,7 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
   const [modalidade, setModalidade] = useState('');
   const [source, setSource] = useState<DataSourceFilter>('pncp');
   const [keyword, setKeyword] = useState('');
+  const [periodoTipo, setPeriodoTipo] = useState<'abertura' | 'publicacao'>('publicacao');
 
   function applyShortcut(shortcut: typeof DATE_SHORTCUTS[number]) {
     const { ini, end } = shortcut.getDates();
@@ -78,6 +79,7 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
       keyword: keyword.trim() || undefined,
       uf: uf || undefined,
       modalidade: modalidade || undefined,
+      periodoTipo,
       dataInicial: dateIni ? format(dateIni, 'yyyy-MM-dd') : undefined,
       dataFinal: dateEnd ? format(dateEnd, 'yyyy-MM-dd') : undefined,
       source,
@@ -171,18 +173,35 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
 
               <div>
                 <Label className="text-white/80">Estado (UF)</Label>
-                <Select onValueChange={setUf} value={uf}>
-                  <SelectTrigger className="bg-white/10 border-white/20 text-white mt-1">
-                    <SelectValue placeholder="Todos os estados" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-800 text-white border-slate-700 max-h-72">
-                    {UF_LIST.map((u) => (
-                      <SelectItem key={u.sigla} value={u.sigla}>
-                        {u.sigla} — {u.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between bg-white/10 border-white/20 text-white mt-1 hover:bg-white/20 hover:text-white font-normal">
+                      {uf ? `UF: ${uf}` : 'Todos os estados'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[340px] p-4 bg-slate-800 border-slate-700 shadow-2xl z-[100]">
+                    <div className="text-sm text-white/70 mb-3 font-medium">Escolha o Estado</div>
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setUf('')}
+                          className={cn('rounded px-2.5 py-1.5 text-xs font-semibold border transition-all', uf === '' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10')}
+                        >
+                          TODOS
+                        </button>
+                      {UF_LIST.map((u) => (
+                        <button
+                          key={u.sigla}
+                          type="button"
+                          onClick={() => setUf(u.sigla)}
+                          className={cn('rounded px-2.5 py-1.5 text-xs font-semibold border transition-all min-w-[36px]', uf === u.sigla ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10')}
+                        >
+                          {u.sigla}
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div>
@@ -204,9 +223,17 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
 
             {/* Date range */}
             <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Label className="text-white/80 shrink-0">Período de abertura</Label>
-                <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                <Select onValueChange={(v: 'abertura' | 'publicacao') => setPeriodoTipo(v)} value={periodoTipo}>
+                  <SelectTrigger className="w-[180px] bg-white/10 border-white/20 text-white shadow-sm">
+                    <SelectValue placeholder="Período" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800 border-slate-700 text-white z-[100]">
+                    <SelectItem value="publicacao">Data de publicação</SelectItem>
+                    <SelectItem value="abertura">Data de abertura</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex flex-wrap items-center gap-1.5">
                   {DATE_SHORTCUTS.map((s) => (
                     <button
                       key={s.label}
@@ -243,7 +270,7 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
                       {dateIni ? format(dateIni, 'dd/MM/yyyy') : 'Data inicial'}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-2 bg-slate-800 border-slate-700 text-white">
+                  <PopoverContent className="w-auto p-2 bg-slate-800 border-slate-700 text-white z-[100] shadow-2xl">
                     <Calendar
                       mode="single"
                       selected={dateIni}
@@ -267,7 +294,7 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
                       {dateEnd ? format(dateEnd, 'dd/MM/yyyy') : 'Data final'}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-2 bg-slate-800 border-slate-700 text-white">
+                  <PopoverContent className="w-auto p-2 bg-slate-800 border-slate-700 text-white z-[100] shadow-2xl">
                     <Calendar
                       mode="single"
                       selected={dateEnd}
