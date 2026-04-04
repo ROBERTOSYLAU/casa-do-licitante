@@ -1,23 +1,22 @@
-/**
- * ComprasGov connector — dadosabertos.compras.gov.br
- * Contratações Lei 14.133/2021 + legado 8.666
- * Base: https://dadosabertos.compras.gov.br  (public, no auth)
- */
 import type { LicitacaoSearchResult, SearchFilters } from '@casa/domain';
 
 const BASE = 'https://dadosabertos.compras.gov.br';
 
-// codigoModalidade no dadosabertos — validados empiricamente (outros retornam 0 registros)
+// codigoModalidade no dadosabertos — validados empiricamente
 // 3=Concorrência, 5=Pregão, 6=Dispensa, 7=Inexigibilidade
 const DEFAULT_MODALIDADES_COMPRAS = [3, 5, 6, 7];
 
-// Mapeamento modalidade domínio → codigoModalidade ComprasNet
-const MODALIDADE_MAP_COMPRAS: Record<string, number> = {
-  pregao_eletronico: 5,
-  pregao_presencial: 5, // mesma categoria na API
-  concorrencia:      3,
-  dispensa:          6,
-  inexigibilidade:   7,
+const MODALIDADE_COMPRA_MAP: Record<string, number[]> = {
+  pregao_eletronico: [5],
+  pregao_presencial: [5],
+  concorrencia: [3],
+  tomada_preco: [3],
+  convite: [3],
+  dispensa: [6],
+  inexigibilidade: [7],
+  credenciamento: [7],
+  leilao: [3],
+  rdc: [3],
 };
 
 interface ComprasGovItem {
@@ -55,7 +54,6 @@ function normalizeStatus(situacao?: string): LicitacaoSearchResult['status'] {
 
 function normalizeModalidade(nome?: string): string {
   const lower = (nome ?? '').toLowerCase();
-  // API retorna "Pregão - Eletrônico" e "Pregão - Presencial" (com hífen)
   if (lower.includes('pregão') || lower.includes('pregao')) {
     if (lower.includes('presencial')) return 'pregao_presencial';
     return 'pregao_eletronico';
@@ -69,27 +67,30 @@ function normalizeModalidade(nome?: string): string {
   return 'outro';
 }
 
-async function fetchByCodigoModalidade(
-  codigoModalidade: number,
-  filters: SearchFilters,
-): Promise<LicitacaoSearchResult[]> {
-  const today = new Date().toISOString().slice(0, 10);
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+function getDateWindow(filters: SearchFilters) {
+  const today = new Date();
+  const plusThirty = new Date(Date.now() + 30 * 86400000);
+
+  return {
+    dataInicial: filters.dataInicial ?? today.toISOString().slice(0, 10),
+    dataFinal: filters.dataFinal ?? filters.dataInicial ?? plusThirty.toISOString().slice(0, 10),
+  };
+}
+
+async function fetchByCodigoModalidade(codigoModalidade: number, filters: SearchFilters): Promise<LicitacaoSearchResult[]> {
+  const { dataInicial, dataFinal } = getDateWindow(filters);
 
   const params = new URLSearchParams({
     pagina: String(filters.page ?? 1),
-    tamanhoPagina: '20',
-    dataPublicacaoPncpInicial: filters.dataInicial ?? thirtyDaysAgo,
-    dataPublicacaoPncpFinal: filters.dataFinal ?? today,
+    tamanhoPagina: '50',
+    dataPublicacaoPncpInicial: dataInicial,
+    dataPublicacaoPncpFinal: dataFinal,
     codigoModalidade: String(codigoModalidade),
   });
 
   if (filters.uf) params.set('unidadeOrgaoUfSigla', filters.uf);
 
-  const res = await fetch(
-    `${BASE}/modulo-contratacoes/1_consultarContratacoes_PNCP_14133?${params.toString()}`,
-  );
-
+  const res = await fetch(`${BASE}/modulo-contratacoes/1_consultarContratacoes_PNCP_14133?${params.toString()}`);
   if (!res.ok) {
     console.error(`[ComprasNet] HTTP ${res.status} codigoModalidade=${codigoModalidade}`, await res.text().catch(() => ''));
     return [];
@@ -97,11 +98,11 @@ async function fetchByCodigoModalidade(
 
   const body = (await res.json()) as ComprasGovResponse;
   const items = body.resultado ?? [];
-
   const keyword = filters.keyword?.toLowerCase();
 
   return items
     .filter((l) => !keyword || (l.objetoCompra ?? '').toLowerCase().includes(keyword))
+    .filter((l) => !filters.modalidade || normalizeModalidade(l.modalidadeNome) === filters.modalidade)
     .map((l) => ({
       id: `comprasnet-${l.numeroControlePNCP ?? l.idCompra}`,
       source: 'comprasnet' as const,
@@ -113,24 +114,18 @@ async function fetchByCodigoModalidade(
       municipio: l.unidadeOrgaoMunicipioNome,
       modalidade: normalizeModalidade(l.modalidadeNome),
       status: normalizeStatus(l.situacaoCompraNomePncp),
-      valorEstimado:
-        l.valorTotalEstimado != null
-          ? Math.round(l.valorTotalEstimado * 100)
-          : undefined,
+      valorEstimado: l.valorTotalEstimado != null ? Math.round(l.valorTotalEstimado * 100) : undefined,
       dataAbertura: l.dataAberturaPropostaPncp ?? l.dataPublicacaoPncp ?? '',
       dataEncerramentoPropostas: l.dataEncerramentoPropostaPncp,
     }));
 }
 
-export async function fetchComprasnetBids(
-  filters: SearchFilters,
-): Promise<LicitacaoSearchResult[]> {
-  const mapped = filters.modalidade !== undefined ? MODALIDADE_MAP_COMPRAS[filters.modalidade] : undefined;
-  const modalidades: number[] = mapped !== undefined ? [mapped] : DEFAULT_MODALIDADES_COMPRAS;
+export async function fetchComprasnetBids(filters: SearchFilters): Promise<LicitacaoSearchResult[]> {
+  const modalidades = filters.modalidade ? MODALIDADE_COMPRA_MAP[filters.modalidade] ?? DEFAULT_MODALIDADES_COMPRAS : DEFAULT_MODALIDADES_COMPRAS;
+  const results = await Promise.all(modalidades.map((m) => fetchByCodigoModalidade(m, filters)));
 
-  const results = await Promise.all(
-    modalidades.map((m) => fetchByCodigoModalidade(m, filters)),
-  );
-
-  return results.flat().slice(0, 50);
+  return results
+    .flat()
+    .sort((a, b) => (a.dataAbertura ?? '').localeCompare(b.dataAbertura ?? ''))
+    .slice(0, 80);
 }
