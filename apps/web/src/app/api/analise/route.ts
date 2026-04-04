@@ -20,9 +20,10 @@ export async function GET(req: NextRequest) {
     // Agrupa por modalidade
     const byModalidade: Record<string, { count: number; valor: number }> = {};
     for (const l of all) {
-      if (!byModalidade[l.modalidade]) byModalidade[l.modalidade] = { count: 0, valor: 0 };
-      byModalidade[l.modalidade].count++;
-      byModalidade[l.modalidade].valor += l.valorEstimado ?? 0;
+      const mKey = l.modalidade || 'outro';
+      if (!byModalidade[mKey]) byModalidade[mKey] = { count: 0, valor: 0 };
+      byModalidade[mKey]!.count++;
+      byModalidade[mKey]!.valor += l.valorEstimado ?? 0;
     }
 
     // Agrupa por UF

@@ -114,12 +114,12 @@ function KanbanCard({
         >
           {expanded ? 'menos' : 'notas + mover'}
         </button>
-        {stageIdx < STAGES.length - 1 && (
+        {stageIdx < STAGES.length - 1 && STAGES[stageIdx + 1] && (
           <button
-            onClick={() => onMove(card.id, STAGES[stageIdx + 1].id)}
+            onClick={() => onMove(card.id, STAGES[stageIdx + 1]!.id)}
             className="inline-flex items-center gap-1 rounded-full bg-white/5 border border-white/10 px-2 py-0.5 text-[10px] text-white/50 hover:bg-white/10 hover:text-white transition"
           >
-            {STAGES[stageIdx + 1].label} <ChevronRight className="h-3 w-3" />
+            {STAGES[stageIdx + 1]!.label} <ChevronRight className="h-3 w-3" />
           </button>
         )}
       </div>
