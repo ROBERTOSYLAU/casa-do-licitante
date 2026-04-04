@@ -28,4 +28,34 @@ jobs:
           port: ${{ secrets.VPS_PORT || 22 }}
           script_stop: true
           script: |
-            bash /docker/app-casa-do-licitante/scripts/deploy.sh
+            set -euo pipefail
+            APP_DIR="/docker/app-casa-do-licitante"
+            REPO_URL="https://github.com/ROBERTOSYLAU/app-casa-do-licitante.git"
+
+            echo "==> [$(date -u +%Y-%m-%dT%H:%M:%SZ)] Starting deployment"
+
+            # First-time setup: clone repo if not exists
+            if [ ! -d "$APP_DIR/.git" ]; then
+              echo "==> First-time setup: cloning repository..."
+              mkdir -p "$(dirname "$APP_DIR")"
+              git clone "$REPO_URL" "$APP_DIR"
+              echo "==> Clone complete."
+            fi
+
+            cd "$APP_DIR"
+
+            # Pull latest code
+            echo "==> Pulling latest code..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Rebuild and restart containers
+            echo "==> Rebuilding containers..."
+            docker compose up -d --build --no-deps web worker
+
+            # Run migrations
+            echo "==> Running database migrations..."
+            docker exec casa-web sh -c 'cd /app && node_modules/.bin/prisma migrate deploy --schema packages/db/prisma/schema.prisma'
+
+            echo "==> Deployment complete!"
+            docker compose ps
