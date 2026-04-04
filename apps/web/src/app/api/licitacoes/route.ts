@@ -9,6 +9,7 @@ export async function GET(req: NextRequest) {
     uf: searchParams.get('uf') ?? undefined,
     modalidade: searchParams.get('modalidade') ?? undefined,
     dataInicial: searchParams.get('dataInicial') ?? undefined,
+    dataFinal: searchParams.get('dataFinal') ?? undefined,
     source: (searchParams.get('source') as SearchFilters['source']) ?? 'ambos' as const,
   };
 

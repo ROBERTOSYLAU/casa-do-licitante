@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 
-const APP_ROUTES = /^\/(dashboard|licitacoes|contratos|fornecedores|ferramentas|alertas)(\/|$)/;
+const APP_ROUTES = /^\/(dashboard|licitacoes|contratos|fornecedores|ferramentas|alertas|analise|minha-empresa|juridico)(\/|$)/;
 
 // next-auth v5 mudou o nome do cookie: authjs.session-token (http) ou __Secure-authjs.session-token (https)
 const COOKIE_NAME = process.env.NEXTAUTH_URL?.startsWith('https')

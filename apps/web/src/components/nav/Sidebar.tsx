@@ -8,43 +8,116 @@ import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard,
   FileSearch,
-  FileCheck2,
+  GitMerge,
+  BarChart3,
+  Bell,
   Building2,
   Wrench,
+  Scale,
   Menu,
   X,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-const NAV_ITEMS: { href: Route; label: string; icon: LucideIcon }[] = [
-  { href: '/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
-  { href: '/licitacoes',   label: 'Licitações',   icon: FileSearch      },
-  { href: '/contratos',    label: 'Contratos',    icon: FileCheck2      },
-  { href: '/fornecedores', label: 'Fornecedores', icon: Building2       },
-  { href: '/ferramentas',  label: 'Ferramentas',  icon: Wrench          },
+type NavItem = {
+  href: Route;
+  label: string;
+  icon: LucideIcon;
+  children?: { href: Route; label: string }[];
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { href: '/dashboard',      label: 'Dashboard',       icon: LayoutDashboard },
+  {
+    href: '/licitacoes',
+    label: 'Licitações',
+    icon: FileSearch,
+    children: [
+      { href: '/licitacoes',        label: 'Pesquisar' },
+      { href: '/licitacoes/funil',  label: 'Funil (Kanban)' },
+    ],
+  },
+  { href: '/analise',        label: 'Análise',          icon: BarChart3 },
+  { href: '/alertas',        label: 'Alertas',          icon: Bell },
+  { href: '/minha-empresa',  label: 'Minha Empresa',    icon: Building2 },
+  { href: '/juridico',       label: 'Jurídico',         icon: Scale },
+  { href: '/ferramentas',    label: 'Ferramentas',      icon: Wrench },
 ];
 
-function NavLinks({
-  pathname,
-  onNavigate,
-}: {
-  pathname: string;
-  onNavigate?: () => void;
-}) {
+function NavLinks({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  const [expanded, setExpanded] = useState<string[]>(['/licitacoes']);
+
+  function toggleExpand(href: string) {
+    setExpanded(prev =>
+      prev.includes(href) ? prev.filter(h => h !== href) : [...prev, href]
+    );
+  }
+
   return (
     <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
-      {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-        const active = pathname === href || pathname.startsWith(href + '/');
+      {NAV_ITEMS.map(({ href, label, icon: Icon, children }) => {
+        const isActive = pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'));
+        const isExpanded = expanded.includes(href);
+
+        if (children) {
+          return (
+            <div key={href}>
+              <button
+                onClick={() => toggleExpand(href)}
+                className={cn(
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors duration-150',
+                  isActive
+                    ? 'bg-blue-600/15 text-blue-400'
+                    : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100',
+                )}
+              >
+                <Icon size={17} strokeWidth={1.8} className="shrink-0" />
+                <span className="flex-1 text-left">{label}</span>
+                {isExpanded
+                  ? <ChevronDown size={14} className="shrink-0 opacity-50" />
+                  : <ChevronRight size={14} className="shrink-0 opacity-50" />
+                }
+              </button>
+              {isExpanded && (
+                <div className="ml-8 mt-0.5 space-y-0.5">
+                  {children.map(child => {
+                    const childActive = pathname === child.href;
+                    return (
+                      <Link
+                        key={child.href}
+                        href={child.href}
+                        onClick={onNavigate}
+                        className={cn(
+                          'flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors duration-150',
+                          childActive
+                            ? 'bg-blue-600/10 text-blue-300'
+                            : 'text-slate-500 hover:bg-slate-800 hover:text-slate-200',
+                        )}
+                      >
+                        <span className="w-1 h-1 rounded-full bg-current opacity-50 shrink-0" />
+                        {child.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        }
+
         return (
           <Link
             key={href}
             href={href}
             onClick={onNavigate}
-            className={[
+            className={cn(
               'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors duration-150',
-              active
+              isActive
                 ? 'bg-blue-600/15 text-blue-400'
                 : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100',
-            ].join(' ')}
+            )}
           >
             <Icon size={17} strokeWidth={1.8} className="shrink-0" />
             {label}
@@ -55,13 +128,7 @@ function NavLinks({
   );
 }
 
-function SidebarContent({
-  pathname,
-  onNavigate,
-}: {
-  pathname: string;
-  onNavigate?: () => void;
-}) {
+function SidebarContent({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
   return (
     <div className="flex flex-col h-full">
       {/* Brand */}
@@ -75,7 +142,7 @@ function SidebarContent({
 
       {/* Version footer */}
       <div className="px-5 py-4 border-t border-slate-800 shrink-0">
-        <span className="text-xs text-slate-700 font-mono">v0.1 · MVP</span>
+        <span className="text-xs text-slate-700 font-mono">v0.2 · Beta</span>
       </div>
     </div>
   );
@@ -87,7 +154,7 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile: hamburger button (sits above topbar area) */}
+      {/* Mobile: hamburger */}
       <button
         onClick={() => setOpen(true)}
         aria-label="Abrir menu"
@@ -96,7 +163,7 @@ export function Sidebar() {
         <Menu size={18} />
       </button>
 
-      {/* Mobile: darkened backdrop */}
+      {/* Mobile: backdrop */}
       {open && (
         <div
           className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
@@ -104,15 +171,11 @@ export function Sidebar() {
         />
       )}
 
-      {/* Mobile: slide-in panel */}
-      <aside
-        className={[
-          'lg:hidden fixed inset-y-0 left-0 z-50 w-60',
-          'bg-slate-900 border-r border-slate-800',
-          'transform transition-transform duration-200 ease-in-out',
-          open ? 'translate-x-0' : '-translate-x-full',
-        ].join(' ')}
-      >
+      {/* Mobile: slide-in */}
+      <aside className={cn(
+        'lg:hidden fixed inset-y-0 left-0 z-50 w-60 bg-slate-900 border-r border-slate-800 transform transition-transform duration-200 ease-in-out',
+        open ? 'translate-x-0' : '-translate-x-full',
+      )}>
         <button
           onClick={() => setOpen(false)}
           aria-label="Fechar menu"
@@ -123,7 +186,7 @@ export function Sidebar() {
         <SidebarContent pathname={pathname} onNavigate={() => setOpen(false)} />
       </aside>
 
-      {/* Desktop: fixed sidebar */}
+      {/* Desktop: fixed */}
       <aside className="hidden lg:flex lg:flex-col fixed inset-y-0 left-0 w-60 bg-slate-900 border-r border-slate-800">
         <SidebarContent pathname={pathname} />
       </aside>

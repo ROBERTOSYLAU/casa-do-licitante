@@ -1,5 +1,5 @@
 # 🤖 CLAUDE CODE — LOG DE TRABALHO
-**Última atualização:** 2026-03-30 às 16:20 (GMT-3)
+**Última atualização:** 2026-04-04 às 18:30 (GMT-3)
 **Assistente:** Claude Code (claude-sonnet-4-6) via VPS Hostinger
 
 ---
@@ -68,7 +68,88 @@ Solução: configuramos o nginx do BadgeOne para também rotear `app.casadolicit
 
 ---
 
-## 🔲 O QUE AINDA PRECISA SER FEITO
+## ✅ O QUE FOI FEITO — SESSÃO 2026-04-04
+
+### 1. Auditoria e Correção Cirúrgica das Integrações de API
+
+**Problemas encontrados e corrigidos:**
+
+| Arquivo | Bug | Correção |
+|---------|-----|----------|
+| `packages/gov-apis/src/comprasnet.ts` | `DEFAULT_MODALIDADES_COMPRAS = [1,2,5,6]` — códigos 1 e 2 retornavam ZERO resultados | Substituído por `[3,5,6,7]` (Concorrência, Pregão, Dispensa, Inexigibilidade — validados empiricamente) |
+| `packages/gov-apis/src/comprasnet.ts` | `filters.modalidade` completamente ignorado em `fetchComprasnetBids` | Adicionado `MODALIDADE_MAP_COMPRAS` e lógica de seleção por filtro |
+| `packages/gov-apis/src/comprasnet.ts` + `pncp.ts` | Normalizer verificava `"pregão eletrônico"` mas API retorna `"Pregão - Eletrônico"` (com hífen) — todos normalizavam como `'outro'` | Reescrito para detectar palavras-chave independentes (`includes('pregão')`) |
+| `packages/gov-apis/src/pncp.ts` | `DEFAULT_MODALIDADES = [6,7,8,9]` — não incluía concorrência (código 4) | Adicionado código 4 → `[4,6,7,8,9]` |
+| `packages/gov-apis/src/pncp.ts` + `comprasnet.ts` | Janela de data padrão de 7 dias — muito restrita | Aumentado para 30 dias |
+| `packages/gov-apis/src/pncp.ts` + `comprasnet.ts` | Erros HTTP silenciados (`return []` sem log) | Adicionado `console.error` em respostas não-ok |
+| `apps/web/src/app/api/ferramentas/cnpj/route.ts` | BrasilAPI retorna `{ message }` mas código esperava `{ error }` — sempre mostrava "Erro desconhecido" | Extrai `data.message`, adiciona logging |
+
+**Commit:** `3a7fc11` — `fix: corrige integração ComprasNet, normalizador de modalidade e CNPJ`
+
+### 2. Análise do App de Referência — SIGA PREGÃO
+
+Analisadas **26 screenshots** do app `app.sigapregao.com.br` (app que o cliente usa como benchmark).
+Análise completa salva em `/root/.claude/projects/.../memory/reference_sigapregao.md`
+
+**Features mapeadas no SIGA PREGÃO:**
+- Busca com filtros como tags removíveis, contador de resultados, pesquisa avançada completa
+- Cards com categorias por IA, modo de disputa, badges visuais
+- Date range picker com atalhos (Hoje, 7d, 30d, Esse mês)
+- Multi-keyword separado por `;`
+- 20+ portais selecionáveis (Comprasnet, Licitações-e, COMPRAS RS, etc.)
+- Funil de Licitações (Kanban) + Quadros + Agenda
+- Análise de Mercado (mapa interativo, gráficos por esfera/poder/categoria)
+- Contratações Futuras (PCA/PNCP com R$ 2,5 tri mapeados)
+- Peças Jurídicas (modelos de impugnação, recurso, esclarecimento)
+- Meus Documentos (gerenciador com validade)
+- Minhas Empresas (vincular CNPJ para alertas automáticos)
+- Jornal diário via WhatsApp
+
+### 3. Implementação em Andamento — Melhorias do Produto
+
+> **Iniciada em 2026-04-04 — ver seção "Em construção" abaixo**
+
+---
+
+## 🚧 EM CONSTRUÇÃO — SESSÃO 2026-04-04 (continuação)
+
+### Roadmap de features a implementar (em ordem de execução):
+
+#### FASE 1 — Busca mais rica (impacto imediato, sem banco novo)
+- [ ] Cards de resultado com mais informações (modo de disputa, data/hora, badges coloridos, valor)
+- [ ] Filtros ativos como tags removíveis abaixo da barra de busca
+- [ ] Contador "X resultados encontrados"
+- [ ] Date range picker com atalhos rápidos (Hoje, 7d, 30d, Esse mês)
+- [ ] Campo dataFinal no filtro (hoje só tem dataInicial)
+- [ ] Pesquisa avançada modal (multi-keyword, ME/EPP, excluir SRP)
+
+#### FASE 2 — Funil de Licitações (Kanban)
+- [ ] Página `/licitacoes/funil` com colunas: Prospecção → Analisando → Decidido Participar → Em Disputa → Ganho/Perdido
+- [ ] Persistência no banco (tabela `FunilLicitacao`)
+- [ ] Drag-and-drop entre colunas
+
+#### FASE 3 — Minhas Empresas
+- [ ] Vincular CNPJ ao perfil do usuário
+- [ ] Busca automática de dados via BrasilAPI
+- [ ] Base para alertas e automações futuras
+
+#### FASE 4 — Análise de Mercado (básica)
+- [ ] Página `/analise` com gráfico de licitações por mês
+- [ ] Distribuição por modalidade
+- [ ] Mapa do Brasil por UF (heatmap simples)
+
+#### FASE 5 — Contratações Futuras (PCA)
+- [ ] Integração com API PNCP de Planos de Contratação Anual
+- [ ] Página `/analise/contratacoes-futuras`
+- [ ] Filtro por ano, estado, categoria
+
+#### FASE 6 — Peças Jurídicas
+- [ ] Biblioteca de modelos de documentos (impugnação, recurso, esclarecimento)
+- [ ] Página `/juridico/pecas`
+
+---
+
+## 🔲 O QUE AINDA PRECISA SER FEITO (infra/config)
 
 ### Prioridade ALTA — Para o app ficar acessível online
 
@@ -99,21 +180,6 @@ Solução: configuramos o nginx do BadgeOne para também rotear `app.casadolicit
   - `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`
 
 - [ ] **Portal Transparência API** — `TRANSPARENCIA_API_KEY` (CEIS/CNEP)
-
-### Prioridade MÉDIA — Features do produto
-
-- [ ] **Worker de ingestão ativo** — PNCP + ComprasNet rodando em schedule real
-- [ ] **Dashboard com dados reais** do banco
-- [ ] **Sistema de alertas** — e-mail/WhatsApp quando licitação bate em filtros
-- [ ] **Detalhe canônico de licitação** — página com itens, edital, contratos
-
-### Prioridade BAIXA — Crescimento
-
-- [ ] **Landing page** em `casadolicitante.com.br`
-  - Apresentação do produto, preços, CTA para `app.casadolicitante.com.br`
-- [ ] **Enriquecimento com IA** — análise de editais, scoring de oportunidades
-- [ ] **Integração IBGE** — dados de capacidade de municípios, terceiro setor
-- [ ] **Observabilidade** — logs estruturados, métricas do worker, alertas de falha
 
 ---
 
@@ -152,6 +218,15 @@ packages/domain    → tipos e enums (type: module, ESM puro)
 packages/gov-apis  → conectores PNCP, ComprasNet (type: module, ESM puro)
 ```
 
+**Stack de frontend:**
+```
+Next.js 15 App Router
+Tailwind CSS + shadcn/ui
+NextAuth v5 (autenticação)
+Prisma ORM (PostgreSQL)
+BullMQ (filas de trabalho)
+```
+
 ---
 
 ## 📁 CAMINHOS IMPORTANTES NA VPS
@@ -162,6 +237,9 @@ packages/gov-apis  → conectores PNCP, ComprasNet (type: module, ESM puro)
 | `/docker/app-casa-do-licitante/.env` | Variáveis de ambiente — **NUNCA commitar** |
 | `/root/app-casa-do-licitante/` | Clone do repositório Git |
 | `/root/app-badgeone-/nginx/default.conf` | Config nginx compartilhado (BadgeOne + Casa do Licitante) |
+| `/root/.claude/projects/.../memory/` | Memória persistente do Claude Code |
+| `/root/app-casa-do-licitante/docs/CLAUDE_CODE.md` | Este arquivo — log de trabalho |
+| `/root/app-casa-do-licitante/IMAGENS DE REFERENCIA/` | 26 screenshots do SIGA PREGÃO (benchmark) |
 
 ---
 
@@ -185,3 +263,24 @@ packages/gov-apis  → conectores PNCP, ComprasNet (type: module, ESM puro)
 - **nginx compartilhado** — qualquer alteração no arquivo `/root/app-badgeone-/nginx/default.conf` requer rebuild do `badgeone_nginx`
 - **Migrations** — rodam automaticamente via `entrypoint-web.sh` quando o container `casa-web` sobe
 - **Porta 3010** — `casa-web` exposta externamente na 3010 (3000 interna). Nginx roteia para porta interna.
+- **API ComprasNet** — endpoint `/modulo-contratacoes/1_consultarContratacoes_PNCP_14133`, códigos válidos: 3=Concorrência, 5=Pregão, 6=Dispensa, 7=Inexigibilidade
+- **API PNCP** — endpoint `/contratacoes/publicacao`, datas no formato `yyyyMMdd` (sem hifens), `tamanhoPagina` mínimo 10
+- **BrasilAPI CNPJ** — `https://brasilapi.com.br/api/cnpj/v1/{cnpj14digitos}`, retorna `{ message }` em erros (não `{ error }`)
+
+---
+
+## 🎯 VISÃO DO PRODUTO
+
+**Objetivo:** Melhor app de licitações e mercados do terceiro setor e dados públicos do Brasil.
+
+**Benchmark:** SIGA PREGÃO (`app.sigapregao.com.br`)
+
+**Diferenciais a construir:**
+1. Busca unificada PNCP + ComprasNet + outros portais com filtros avançados
+2. Funil de gestão de licitações (Kanban)
+3. Análise de mercado com mapa interativo e gráficos
+4. Contratações futuras baseadas nos PCAs (Planos de Contratação Anual)
+5. Peças jurídicas (modelos de impugnação, recurso, etc.)
+6. Gestão de documentos com controle de validade
+7. Alertas por WhatsApp/email (jornal diário)
+8. Foco especial no **terceiro setor** (OSCs, entidades sem fins lucrativos)

@@ -27,6 +27,7 @@ export default function SearchLicitacoesClient() {
       if (filters.uf) params.set('uf', filters.uf);
       if (filters.modalidade) params.set('modalidade', filters.modalidade);
       if (filters.dataInicial) params.set('dataInicial', filters.dataInicial);
+      if (filters.dataFinal) params.set('dataFinal', filters.dataFinal);
       if (filters.source) params.set('source', filters.source);
 
       const res = await fetch(`/api/licitacoes?${params.toString()}`);
