@@ -22,8 +22,8 @@ const MODALIDADE_MAP: Record<string, number> = {
   concurso:           3,
 };
 
-// Modalidades padrão quando nenhuma é selecionada (as mais comuns)
-const DEFAULT_MODALIDADES = [6, 7, 8, 9];
+// Modalidades padrão quando nenhuma é selecionada
+const DEFAULT_MODALIDADES = [4, 6, 7, 8, 9]; // concorrencia + pregao_eletronico + pregao_presencial + dispensa + inexigibilidade
 
 interface PncpLicitacao {
   numeroControlePNCP: string;
@@ -51,8 +51,11 @@ function toApiDate(iso: string): string {
 
 function normalizePncpModalidade(nome: string): string {
   const lower = nome.toLowerCase();
-  if (lower.includes('pregão eletrônico') || lower.includes('pregao eletronico')) return 'pregao_eletronico';
-  if (lower.includes('pregão presencial') || lower.includes('pregao presencial')) return 'pregao_presencial';
+  // API retorna "Pregão - Eletrônico" e "Pregão - Presencial" (com hífen)
+  if (lower.includes('pregão') || lower.includes('pregao')) {
+    if (lower.includes('presencial')) return 'pregao_presencial';
+    return 'pregao_eletronico';
+  }
   if (lower.includes('concorrência') || lower.includes('concorrencia')) return 'concorrencia';
   if (lower.includes('dispensa')) return 'dispensa';
   if (lower.includes('inexigibilidade')) return 'inexigibilidade';
@@ -79,8 +82,8 @@ async function fetchByModalidade(
   filters: SearchFilters,
 ): Promise<LicitacaoSearchResult[]> {
   const today = new Date().toISOString().slice(0, 10);
-  const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
-  const dataInicial = toApiDate(filters.dataInicial ?? sevenDaysAgo);
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
+  const dataInicial = toApiDate(filters.dataInicial ?? thirtyDaysAgo);
   const dataFinal = toApiDate(filters.dataFinal ?? today);
 
   const params = new URLSearchParams({
@@ -94,7 +97,10 @@ async function fetchByModalidade(
   if (filters.uf) params.set('ufSigla', filters.uf);
 
   const res = await fetch(`${BASE}/contratacoes/publicacao?${params.toString()}`);
-  if (!res.ok || res.status === 204) return [];
+  if (!res.ok || res.status === 204) {
+    if (res.status !== 204) console.error(`[PNCP] HTTP ${res.status} modalidade=${modalidade}`, await res.text().catch(() => ''));
+    return [];
+  }
 
   const text = await res.text();
   if (!text) return [];
