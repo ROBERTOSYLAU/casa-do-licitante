@@ -98,10 +98,14 @@ async function fetchByCodigoModalidade(codigoModalidade: number, filters: Search
 
   const body = (await res.json()) as ComprasGovResponse;
   const items = body.resultado ?? [];
-  const keyword = filters.keyword?.toLowerCase();
+  const keywordTerms = filters.keyword?.toLowerCase().split(';').map((k: string) => k.trim()).filter(Boolean) ?? [];
 
   return items
-    .filter((l) => !keyword || (l.objetoCompra ?? '').toLowerCase().includes(keyword))
+    .filter((l) => {
+      if (keywordTerms.length === 0) return true;
+      const obj = (l.objetoCompra ?? '').toLowerCase();
+      return keywordTerms.every((term: string) => obj.includes(term));
+    })
     .filter((l) => !filters.modalidade || normalizeModalidade(l.modalidadeNome) === filters.modalidade)
     .map((l) => ({
       id: `comprasnet-${l.numeroControlePNCP ?? l.idCompra}`,
@@ -126,6 +130,6 @@ export async function fetchComprasnetBids(filters: SearchFilters): Promise<Licit
 
   return results
     .flat()
-    .sort((a, b) => (a.dataAbertura ?? '').localeCompare(b.dataAbertura ?? ''))
+    .sort((a, b) => (b.dataAbertura ?? '').localeCompare(a.dataAbertura ?? ''))
     .slice(0, 80);
 }
