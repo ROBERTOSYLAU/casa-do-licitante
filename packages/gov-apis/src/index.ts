@@ -1,2 +1,2 @@
-export { fetchPncpBids } from './pncp';
-export { fetchComprasnetBids } from './comprasnet';
+export { fetchPncpBids } from './pncp.js';
+export { fetchComprasnetBids } from './comprasnet.js';
