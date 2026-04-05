@@ -55,7 +55,7 @@ jobs:
 
             # Run migrations
             echo "==> Running database migrations..."
-            docker exec casa-web sh -c 'cd /app && pnpm --filter=@casa/db exec prisma migrate deploy --schema packages/db/prisma/schema.prisma'
+            docker exec casa-web sh -c 'cd /app && pnpm --filter=@casa/db exec prisma migrate deploy --schema prisma/schema.prisma'
 
             echo "==> Deployment complete!"
             docker compose ps
