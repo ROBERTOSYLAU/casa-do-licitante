@@ -108,6 +108,7 @@ services:
       - "3001:3001"
     environment:
       - MODE=api
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
     restart: unless-stopped
 
   # ─── Collector (job one-shot) ─────────────────────────────────────────────
