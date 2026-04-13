@@ -1,0 +1,134 @@
+services:
+
+  # ─── Banco de Dados ────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: casa-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: casa
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: casa_licitante
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U casa -d casa_licitante"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Cache / Fila ──────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: casa-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── App Web (Next.js) ─────────────────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: casa-web
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://casa:${POSTGRES_PASSWORD}@postgres:5432/casa_licitante
+      REDIS_URL: redis://redis:6379
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_TRUST_HOST: "true"
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:-}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      CASA_API_URL: http://casa-api:3001
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:-casa-do-licitante}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EVOLUTION_API_URL: ${EVOLUTION_API_URL:-}
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:-}
+      TRANSPARENCIA_API_KEY: ${TRANSPARENCIA_API_KEY:-}
+    ports:
+      - "3010:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # ─── Worker BullMQ ─────────────────────────────────────────────────────────
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: casa-worker
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://casa:${POSTGRES_PASSWORD}@postgres:5432/casa_licitante
+      REDIS_URL: redis://redis:6379
+      TRANSPARENCIA_API_KEY: ${TRANSPARENCIA_API_KEY:-}
+      EVOLUTION_API_URL: ${EVOLUTION_API_URL:-}
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+
+
+  casa-api:
+    build: ./api
+    container_name: casa-api
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+    ports:
+      - "3001:3001"
+    environment:
+      - MODE=api
+    restart: unless-stopped
+
+  # ─── Collector (job one-shot) ─────────────────────────────────────────────
+  # Executa coleta PNCP e encerra com exit 0. restart: "no" é intencional.
+  # Status "Exited (0)" no Docker Manager é NORMAL — não indica falha.
+  # Para rodar manualmente: docker compose run --rm casa-collector
+  casa-collector:
+    build: ./api
+    container_name: casa-collector
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+    environment:
+      - MODE=collect
+    restart: "no"
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  app-network:
+    driver: bridge
