@@ -1,6 +1,6 @@
 /**
  * Worker entry point — starts all BullMQ workers and cron schedulers.
- * Managed by PM2 as the `worker` process.
+ * Runs via tsx in Docker (container: casa-worker).
  */
 import { Worker } from 'bullmq';
 import { redis, queues } from './queues/index.js';

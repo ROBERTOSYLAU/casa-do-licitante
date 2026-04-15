@@ -27,9 +27,9 @@ git reset --hard origin/main
 echo "==> Rebuilding containers..."
 docker compose up -d --build --no-deps web worker
 
-# Run migrations inside the new web container
-echo "==> Running database migrations..."
-docker exec casa-web sh -c 'cd /app && node_modules/.bin/prisma migrate deploy --schema packages/db/prisma/schema.prisma'
+# Migrations rodam automaticamente no entrypoint-web.sh antes do `next start`.
+# Não é necessário rodar docker exec separado — além de redundante, pode criar
+# race condition se o container ainda estiver inicializando.
 
 echo "==> Deployment complete!"
 docker compose ps

@@ -53,9 +53,8 @@ jobs:
             echo "==> Rebuilding containers..."
             docker compose up -d --build --no-deps web worker
 
-            # Run migrations
-            echo "==> Running database migrations..."
-            docker exec casa-web sh -c 'cd /app && pnpm --filter=@casa/db exec prisma migrate deploy --schema prisma/schema.prisma'
+            # Migrations rodam automaticamente no entrypoint-web.sh antes do next start.
+            # Não rodar docker exec separado — é redundante e pode criar race condition.
 
             echo "==> Deployment complete!"
             docker compose ps
