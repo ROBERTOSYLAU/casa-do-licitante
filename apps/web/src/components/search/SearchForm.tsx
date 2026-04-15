@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import type { DateRange } from 'react-day-picker';
 import { addDays, endOfMonth, format, startOfMonth, startOfToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { CalendarIcon, Search, SlidersHorizontal, Sparkles, Trash2, X } from 'lucide-react';
@@ -22,32 +23,35 @@ interface Props {
 
 const QUICK_KEYWORDS = ['serviço', 'material', 'medicamento', 'manutenção', 'aquisição', 'obra', 'consultoria'];
 
-// Atalhos de período de abertura
 const DATE_SHORTCUTS = [
-  { label: 'Hoje', getDates: () => { const t = startOfToday(); return { ini: t, end: t }; } },
-  { label: 'Próx. 7d', getDates: () => ({ ini: startOfToday(), end: addDays(startOfToday(), 7) }) },
-  { label: 'Próx. 30d', getDates: () => ({ ini: startOfToday(), end: addDays(startOfToday(), 30) }) },
-  { label: 'Esse mês', getDates: () => ({ ini: startOfMonth(new Date()), end: endOfMonth(new Date()) }) },
+  { label: 'Hoje', getDates: () => { const t = startOfToday(); return { from: t, to: t }; } },
+  { label: 'Próx. 7d', getDates: () => ({ from: startOfToday(), to: addDays(startOfToday(), 7) }) },
+  { label: 'Próx. 30d', getDates: () => ({ from: startOfToday(), to: addDays(startOfToday(), 30) }) },
+  { label: 'Esse mês', getDates: () => ({ from: startOfMonth(new Date()), to: endOfMonth(new Date()) }) },
 ] as const;
 
+function formatRange(range: DateRange): string {
+  if (!range.from) return 'Selecione o período';
+  if (!range.to || range.from.getTime() === range.to.getTime()) {
+    return format(range.from, 'dd/MM/yyyy');
+  }
+  return `${format(range.from, 'dd/MM/yyyy')} → ${format(range.to, 'dd/MM/yyyy')}`;
+}
+
 export default function SearchForm({ onSearch, isLoading }: Props) {
-  const [dateIni, setDateIni] = useState<Date | undefined>();
-  const [dateEnd, setDateEnd] = useState<Date | undefined>();
-  const [dateIniOpen, setDateIniOpen] = useState(false);
-  const [dateEndOpen, setDateEndOpen] = useState(false);
+  const [dateRange, setDateRange] = useState<DateRange>({});
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const [uf, setUf] = useState('');
   const [modalidade, setModalidade] = useState('');
-  const [source, setSource] = useState<DataSourceFilter>('ambos');
+  const [source, setSource] = useState<DataSourceFilter>('comprasnet');
   const [keyword, setKeyword] = useState('');
   const [periodoTipo, setPeriodoTipo] = useState<'abertura' | 'publicacao'>('publicacao');
 
   function applyShortcut(shortcut: typeof DATE_SHORTCUTS[number]) {
-    const { ini, end } = shortcut.getDates();
-    setDateIni(ini);
-    setDateEnd(end);
+    setDateRange(shortcut.getDates());
+    setCalendarOpen(false);
   }
 
-  // Filtros ativos como objetos (para poder remover individualmente)
   const activeFilters = useMemo(() => {
     const filters: Array<{ key: string; label: string; onRemove: () => void }> = [];
     if (keyword.trim()) filters.push({ key: 'keyword', label: `"${keyword.trim()}"`, onRemove: () => setKeyword('') });
@@ -56,22 +60,19 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
       const mod = MODALIDADE_LIST.find((m) => m.id === modalidade)?.label ?? modalidade;
       filters.push({ key: 'modalidade', label: mod, onRemove: () => setModalidade('') });
     }
-    if (dateIni) filters.push({
-      key: 'dateIni',
-      label: `De: ${format(dateIni, 'dd/MM/yyyy')}`,
-      onRemove: () => setDateIni(undefined),
-    });
-    if (dateEnd) filters.push({
-      key: 'dateEnd',
-      label: `Até: ${format(dateEnd, 'dd/MM/yyyy')}`,
-      onRemove: () => setDateEnd(undefined),
-    });
+    if (dateRange.from) {
+      filters.push({
+        key: 'dateRange',
+        label: formatRange(dateRange),
+        onRemove: () => setDateRange({}),
+      });
+    }
     if (source && source !== 'ambos') {
       const src = SOURCE_LIST.find((s) => s.id === source)?.label ?? source;
-      filters.push({ key: 'source', label: `Fonte: ${src}`, onRemove: () => setSource('ambos') });
+      filters.push({ key: 'source', label: `Fonte: ${src}`, onRemove: () => setSource('comprasnet') });
     }
     return filters;
-  }, [keyword, uf, modalidade, dateIni, dateEnd, source]);
+  }, [keyword, uf, modalidade, dateRange, source]);
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -80,21 +81,20 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
       uf: uf || undefined,
       modalidade: modalidade || undefined,
       periodoTipo,
-      dataInicial: dateIni ? format(dateIni, 'yyyy-MM-dd') : undefined,
-      dataFinal: dateEnd ? format(dateEnd, 'yyyy-MM-dd') : undefined,
+      dataInicial: dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+      dataFinal: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
       source,
     });
   }
 
   function handleClear() {
-    setDateIni(undefined);
-    setDateEnd(undefined);
+    setDateRange({});
     setUf('');
     setModalidade('');
-    setSource('ambos');
+    setSource('comprasnet');
     setKeyword('');
     setPeriodoTipo('publicacao');
-    onSearch({ source: 'ambos', periodoTipo: 'publicacao' });
+    onSearch({ source: 'comprasnet', periodoTipo: 'publicacao' });
   }
 
   return (
@@ -108,12 +108,12 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
             </div>
             <h1 className="mt-4 text-3xl font-bold text-white">Pesquisa de Licitações</h1>
             <p className="mt-3 max-w-3xl text-white/70">
-              Busque em PNCP, ComprasNet e outras fontes. Combine filtros para encontrar oportunidades com precisão.
+              Busque em ComprasNet, PNCP e outras fontes. Combine filtros para encontrar oportunidades com precisão.
             </p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70">
             <SlidersHorizontal className="inline mr-1.5 h-4 w-4 text-emerald-400" />
-            Dica: use atalhos de data para resultados mais rápidos
+            Dica: clique e arraste no calendário para selecionar o período
           </div>
         </div>
       </section>
@@ -122,7 +122,7 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
         <CardContent className="p-6">
           <form id="search-form" onSubmit={handleSubmit} className="space-y-6">
 
-            {/* Fonte */}
+            {/* Fonte — ComprasNet (padrão) | PNCP | Todas as fontes */}
             <div className="flex flex-wrap gap-2">
               {SOURCE_LIST.map((s) => (
                 <button
@@ -183,13 +183,13 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
                   <PopoverContent className="w-[340px] p-4 bg-slate-800 border-slate-700 shadow-2xl z-[100]">
                     <div className="text-sm text-white/70 mb-3 font-medium">Escolha o Estado</div>
                     <div className="flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setUf('')}
-                          className={cn('rounded px-2.5 py-1.5 text-xs font-semibold border transition-all', uf === '' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10')}
-                        >
-                          TODOS
-                        </button>
+                      <button
+                        type="button"
+                        onClick={() => setUf('')}
+                        className={cn('rounded px-2.5 py-1.5 text-xs font-semibold border transition-all', uf === '' ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10')}
+                      >
+                        TODOS
+                      </button>
                       {UF_LIST.map((u) => (
                         <button
                           key={u.sigla}
@@ -222,7 +222,7 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
               </div>
             </div>
 
-            {/* Date range */}
+            {/* Período — tipo + atalhos + calendário range único */}
             <div className="space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <Select onValueChange={(v: 'abertura' | 'publicacao') => setPeriodoTipo(v)} value={periodoTipo}>
@@ -245,10 +245,10 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
                       {s.label}
                     </button>
                   ))}
-                  {(dateIni || dateEnd) && (
+                  {dateRange.from && (
                     <button
                       type="button"
-                      onClick={() => { setDateIni(undefined); setDateEnd(undefined); }}
+                      onClick={() => setDateRange({})}
                       className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-white/40 transition hover:text-white/70"
                     >
                       Limpar datas
@@ -256,59 +256,47 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
                   )}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <Popover open={dateIniOpen} onOpenChange={setDateIniOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className={cn(
-                        'w-full justify-start text-left font-normal bg-white/10 border-white/20 hover:bg-white/20 text-white hover:text-white',
-                        !dateIni && 'text-white/45',
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-                      {dateIni ? format(dateIni, 'dd/MM/yyyy') : 'Data inicial'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-2 bg-slate-800 border-slate-700 text-white z-[100] shadow-2xl">
-                    <Calendar
-                      mode="single"
-                      selected={dateIni}
-                      onSelect={(d) => { setDateIni(d); setDateIniOpen(false); }}
-                      locale={ptBR}
-                    />
-                  </PopoverContent>
-                </Popover>
 
-                <Popover open={dateEndOpen} onOpenChange={setDateEndOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className={cn(
-                        'w-full justify-start text-left font-normal bg-white/10 border-white/20 hover:bg-white/20 text-white hover:text-white',
-                        !dateEnd && 'text-white/45',
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
-                      {dateEnd ? format(dateEnd, 'dd/MM/yyyy') : 'Data final'}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-2 bg-slate-800 border-slate-700 text-white z-[100] shadow-2xl">
-                    <Calendar
-                      mode="single"
-                      selected={dateEnd}
-                      onSelect={(d) => { setDateEnd(d); setDateEndOpen(false); }}
-                      locale={ptBR}
-                      disabled={(d) => dateIni ? d < dateIni : false}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+              {/* Calendário único com seleção de intervalo (range) */}
+              <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={cn(
+                      'w-full max-w-sm justify-start text-left font-normal bg-white/10 border-white/20 hover:bg-white/20 text-white hover:text-white',
+                      !dateRange.from && 'text-white/45',
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                    {dateRange.from ? formatRange(dateRange) : 'Selecione o período'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-auto p-3 bg-slate-800 border-slate-700 text-white z-[100] shadow-2xl"
+                  align="start"
+                >
+                  <p className="mb-2 text-xs text-white/50 text-center">
+                    Clique na data inicial · depois na data final
+                  </p>
+                  <Calendar
+                    mode="range"
+                    selected={dateRange}
+                    onSelect={(range) => {
+                      setDateRange(range ?? {});
+                      // Fecha automaticamente ao completar o range
+                      if (range?.from && range?.to) {
+                        setTimeout(() => setCalendarOpen(false), 200);
+                      }
+                    }}
+                    locale={ptBR}
+                    numberOfMonths={1}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
-            {/* Filtros ativos — tags removíveis */}
+            {/* Filtros ativos */}
             {activeFilters.length > 0 && (
               <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
                 <div className="mb-2 text-xs uppercase tracking-widest text-white/40 font-medium">Filtros ativos</div>

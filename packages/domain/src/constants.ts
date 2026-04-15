@@ -48,9 +48,9 @@ export const MODALIDADE_LIST = [
 ] as const;
 
 export const SOURCE_LIST = [
-  { id: 'ambos', label: 'Todas as fontes' },
-  { id: 'pncp', label: 'PNCP' },
   { id: 'comprasnet', label: 'ComprasNet' },
+  { id: 'pncp', label: 'PNCP' },
+  { id: 'ambos', label: 'Todas as fontes' },
 ] as const;
 
 /** BullMQ queue names — sem dois-pontos (BullMQ não permite) */

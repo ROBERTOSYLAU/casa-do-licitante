@@ -6,9 +6,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'CNPJ inválido' }, { status: 400 });
   }
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
     const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`, {
-      next: { revalidate: 86400 }, // cache 24h — CNPJ data rarely changes
+      cache: 'no-store',
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
     const data = await res.json() as Record<string, unknown>;
     if (!res.ok) {
       const msg = (data.message as string) ?? (data.error as string) ?? 'CNPJ não encontrado ou erro na Receita Federal';

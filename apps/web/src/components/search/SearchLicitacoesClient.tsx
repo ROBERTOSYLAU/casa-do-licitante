@@ -7,7 +7,7 @@ import SearchForm from './SearchForm';
 import SearchResults from './SearchResults';
 import type { LicitacaoSearchResult, SearchFilters } from '@casa/domain';
 
-const DEFAULT_FILTERS: SearchFilters = { source: 'ambos', periodoTipo: 'publicacao' };
+const DEFAULT_FILTERS: SearchFilters = { source: 'comprasnet', periodoTipo: 'publicacao' };
 
 export default function SearchLicitacoesClient() {
   const [results, setResults] = useState<LicitacaoSearchResult[]>([]);
