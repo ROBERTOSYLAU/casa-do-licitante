@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { ArrowLeft, Building2, CalendarDays, Hash, Landmark, MapPin, ShieldCheck, Sparkles, WalletCards } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatBRL } from '@/lib/utils';
+import { getCanonicalLicitacaoDetail } from '@/app/api/licitacoes/_lib/canonical';
 
 export const metadata: Metadata = { title: 'Detalhes da Licitação' };
 
@@ -22,46 +24,15 @@ function formatDateBR(value?: string | null) {
 
 export default async function LicitacaoDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { id } = await params;
-  const query = await searchParams;
+  const detail = await getCanonicalLicitacaoDetail(decodeURIComponent(id));
 
-  function sp(key: string, fallback = '') {
-    const v = query[key];
-    return typeof v === 'string' ? v : fallback;
+  if (!detail) {
+    notFound();
   }
-
-  const detail = {
-    id: decodeURIComponent(id),
-    source: sp('source'),
-    sourceId: sp('sourceId', decodeURIComponent(id)),
-    objeto: sp('objeto', 'Licitação sem título informado'),
-    orgaoNome: sp('orgaoNome', 'Órgão não informado'),
-    orgaoUasg: sp('orgaoUasg'),
-    uf: sp('uf', '-'),
-    municipio: sp('municipio'),
-    modalidade: sp('modalidade', 'outro'),
-    status: sp('status', 'aberta'),
-    dataAbertura: sp('dataAbertura') || null,
-    dataEncerramentoPropostas: sp('dataEncerramentoPropostas') || null,
-    valorEstimado: sp('valorEstimado') ? Number(sp('valorEstimado')) : null,
-    resumo:
-      'Leitura inicial da oportunidade com foco em triagem, contexto institucional e validação rápida antes da análise aprofundada.',
-    timeline: [
-      {
-        titulo: 'Registro localizado',
-        descricao: 'A oportunidade foi encontrada nas fontes públicas integradas da plataforma.',
-      },
-      {
-        titulo: 'Triagem operacional',
-        descricao: 'Valide objeto, órgão, datas, modalidade, localização e potencial comercial antes de acompanhar.',
-      },
-    ],
-  };
 
   return (
     <div className="space-y-6">

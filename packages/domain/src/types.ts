@@ -70,7 +70,7 @@ export interface LicitacaoSearchResult {
   municipio?: string;
   modalidade: string;
   status: LicitacaoStatus;
-  /** Integer centavos */
+  /** Integer centavos. Can exceed INT4, but remains a JS number for API/UI transport. */
   valorEstimado?: number;
   dataAbertura?: string;
   dataEncerramentoPropostas?: string;

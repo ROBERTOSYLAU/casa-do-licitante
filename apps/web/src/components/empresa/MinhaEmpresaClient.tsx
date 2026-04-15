@@ -58,6 +58,12 @@ function saveEmpresas(e: EmpresaSalva[]) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(e));
 }
 
+function formatDateBR(value: string) {
+  const dt = new Date(value);
+  if (Number.isNaN(dt.getTime())) return value;
+  return dt.toLocaleDateString('pt-BR');
+}
+
 export default function MinhaEmpresaClient() {
   const [cnpj, setCnpj] = useState('');
   const [loading, setLoading] = useState(false);
@@ -252,6 +258,7 @@ export default function MinhaEmpresaClient() {
                     <span>{emp.municipio}/{emp.uf}</span>
                     <span className="truncate max-w-xs">{emp.cnae}</span>
                     <span>{formatBRL(Math.round(emp.capitalSocial * 100))} capital social</span>
+                    <span>salva em {formatDateBR(emp.addedAt)}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

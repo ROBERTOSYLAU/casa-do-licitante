@@ -37,7 +37,7 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
   const [dateEndOpen, setDateEndOpen] = useState(false);
   const [uf, setUf] = useState('');
   const [modalidade, setModalidade] = useState('');
-  const [source, setSource] = useState<DataSourceFilter>('pncp');
+  const [source, setSource] = useState<DataSourceFilter>('ambos');
   const [keyword, setKeyword] = useState('');
   const [periodoTipo, setPeriodoTipo] = useState<'abertura' | 'publicacao'>('publicacao');
 
@@ -91,9 +91,10 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
     setDateEnd(undefined);
     setUf('');
     setModalidade('');
-    setSource('pncp');
+    setSource('ambos');
     setKeyword('');
-    onSearch({ source: 'pncp' });
+    setPeriodoTipo('publicacao');
+    onSearch({ source: 'ambos', periodoTipo: 'publicacao' });
   }
 
   return (

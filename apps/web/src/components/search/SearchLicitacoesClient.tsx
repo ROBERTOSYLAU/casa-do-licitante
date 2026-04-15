@@ -7,7 +7,7 @@ import SearchForm from './SearchForm';
 import SearchResults from './SearchResults';
 import type { LicitacaoSearchResult, SearchFilters } from '@casa/domain';
 
-const DEFAULT_FILTERS: SearchFilters = { source: 'pncp' };
+const DEFAULT_FILTERS: SearchFilters = { source: 'ambos', periodoTipo: 'publicacao' };
 
 export default function SearchLicitacoesClient() {
   const [results, setResults] = useState<LicitacaoSearchResult[]>([]);
@@ -26,6 +26,7 @@ export default function SearchLicitacoesClient() {
       if (filters.keyword) params.set('keyword', filters.keyword);
       if (filters.uf) params.set('uf', filters.uf);
       if (filters.modalidade) params.set('modalidade', filters.modalidade);
+      if (filters.periodoTipo) params.set('periodoTipo', filters.periodoTipo);
       if (filters.dataInicial) params.set('dataInicial', filters.dataInicial);
       if (filters.dataFinal) params.set('dataFinal', filters.dataFinal);
       if (filters.source) params.set('source', filters.source);
@@ -90,7 +91,7 @@ export default function SearchLicitacoesClient() {
               {lastFilters.uf && <span className="rounded-full bg-white/5 px-3 py-1">remover UF</span>}
               {lastFilters.modalidade && <span className="rounded-full bg-white/5 px-3 py-1">remover modalidade</span>}
               {lastFilters.dataInicial && <span className="rounded-full bg-white/5 px-3 py-1">remover data</span>}
-              <span className="rounded-full bg-white/5 px-3 py-1">testar PNCP</span>
+              <span className="rounded-full bg-white/5 px-3 py-1">testar ambas as fontes</span>
             </div>
           </div>
         )}

@@ -110,8 +110,8 @@ model Licitacao {
 
   objeto String @db.Text
 
-  /// Integer centavos
-  valorEstimado Int?
+  /// Integer centavos. BIGINT because public-sector values can exceed INT4.
+  valorEstimado BigInt?
 
   dataPublicacao               DateTime?
   dataAbertura                 DateTime?
@@ -141,8 +141,8 @@ model LicitacaoItem {
   catmat       String?
   catser       String?
   quantidade   Decimal?
-  /// Integer centavos
-  valorUnitarioEstimado Int?
+  /// Integer centavos. BIGINT because unit prices may exceed INT4 in centavos.
+  valorUnitarioEstimado BigInt?
 
   licitacao Licitacao @relation(fields: [licitacaoId], references: [id], onDelete: Cascade)
 
@@ -180,8 +180,8 @@ model Contrato {
 
   vigenciaInicio  DateTime
   vigenciaFim     DateTime
-  /// Integer centavos
-  valorGlobal     Int
+  /// Integer centavos. BIGINT because contract totals may exceed INT4.
+  valorGlobal     BigInt
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -197,8 +197,8 @@ model Aditamento {
   id           String   @id @default(cuid())
   contratoId   String
   tipo         String
-  /// Integer centavos
-  valorAcrescimo    Int @default(0)
+  /// Integer centavos. BIGINT because amendments may exceed INT4.
+  valorAcrescimo    BigInt @default(0)
   novaVigenciaFim   DateTime?
   dataAssinatura    DateTime
   createdAt    DateTime @default(now())
@@ -268,10 +268,10 @@ model AlertSubscription {
   keywords       String[]
   uasgs          String[]
   ufs            String[]
-  /// Integer centavos — null = no minimum
-  valorMin       Int?
-  /// Integer centavos — null = no maximum
-  valorMax       Int?
+  /// Integer centavos — null = no minimum. BIGINT for high-value filters.
+  valorMin       BigInt?
+  /// Integer centavos — null = no maximum. BIGINT for high-value filters.
+  valorMax       BigInt?
   channels       AlertChannel[]
   digest         AlertDigest   @default(realtime)
   active         Boolean @default(true)

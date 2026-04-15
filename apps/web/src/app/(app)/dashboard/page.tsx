@@ -8,8 +8,8 @@ export const metadata: Metadata = { title: 'Dashboard' };
 const kpis = [
   { label: 'Oportunidades monitoradas', value: '128', detail: 'Janela operacional dos últimos 30 dias' },
   { label: 'Alertas relevantes', value: '19', detail: 'Correspondência com filtros e perfil da empresa' },
-  { label: 'Contratos sensíveis', value: '7', detail: 'Vencimentos ou renovações em atenção' },
-  { label: 'Fontes integradas', value: '2', detail: 'PNCP e ComprasNet ativos no MVP' },
+  { label: 'Contratos sensíveis', value: '07', detail: 'Vencimentos ou renovações em atenção' },
+  { label: 'Fontes integradas', value: '02', detail: 'PNCP e ComprasNet ativos no MVP' },
 ];
 
 const quickActions: { href: '/licitacoes' | '/ferramentas' | '/contratos' | '/fornecedores'; label: string; icon: LucideIcon }[] = [

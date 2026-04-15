@@ -100,12 +100,32 @@ app-casa-do-licitante/
 │   ├── db/               # Prisma schema + client
 │   ├── domain/           # tipos e contratos de domínio
 │   └── gov-apis/         # conectores das APIs públicas
-├── docs/                 # roadmap, próximos passos e documentação operacional
-├── nginx/                # proxy reverso
-├── scripts/              # setup e deploy VPS
-├── ecosystem.config.cjs  # PM2
+├── api/                  # API legada Express ainda exposta em subdomínio próprio
+├── docs/                 # documentação técnica e operacional
+├── nginx/                # proxy reverso de referência
+├── scripts/              # entrypoints e automação de deploy
+├── Dockerfile.web        # imagem de produção da aplicação web
+├── Dockerfile.worker     # imagem de produção do worker
+├── docker-compose.yml    # stack local/VPS
+├── ecosystem.config.cjs  # legado PM2 (manter só se necessário)
 └── turbo.json            # orquestração do monorepo
 ```
+
+## Como a arquitetura está organizada hoje
+
+### Serviços principais
+- **web**: app Next.js 15, autenticação, páginas, rotas `/api/*` e health check
+- **worker**: BullMQ + Redis, ingestão recorrente de fontes públicas
+- **api**: serviço Express legado, ainda publicado em `api.casadolicitante.com.br`
+- **postgres**: persistência principal
+- **redis**: filas, cache e agendamento
+
+### Regras de organização
+- tudo que for **domínio compartilhado** fica em `packages/`
+- tudo que for **interface e rotas web** fica em `apps/web`
+- tudo que for **processamento assíncrono** fica em `apps/worker`
+- a pasta `api/` é um serviço **legado/compatível**, e deve ser mantida isolada até eventual absorção pela app web
+- deploy oficial em produção deve priorizar **Docker Compose**, evitando drift entre PM2 e containers
 
 ---
 

@@ -2,6 +2,11 @@ import type { LicitacaoSearchResult, SearchFilters } from '@casa/domain';
 
 const BASE = 'https://dadosabertos.compras.gov.br';
 
+function getComprasnetHeaders() {
+  const apiKey = process.env['COMPRASNET_API_KEY'];
+  return apiKey ? { 'chave-api-dados': apiKey } : undefined;
+}
+
 // codigoModalidade da API dadosabertos.compras.gov.br (distinto do PNCP)
 // Referência: Manual API Compras.gov.br v2.0 (Fev/2026) — seção 10.5
 // 3=Concorrência, 5=Pregão Eletrônico, 6=Dispensa Eletrônica, 7=Inexigibilidade
@@ -103,7 +108,9 @@ async function fetchByCodigoModalidade(codigoModalidade: number, filters: Search
 
   if (filters.uf) params.set('unidadeOrgaoUfSigla', filters.uf);
 
-  const res = await fetch(`${BASE}/modulo-contratacoes/1_consultarContratacoes_PNCP_14133?${params.toString()}`);
+  const res = await fetch(`${BASE}/modulo-contratacoes/1_consultarContratacoes_PNCP_14133?${params.toString()}`, {
+    headers: getComprasnetHeaders(),
+  });
     if (!res.ok) {
           console.error(`[ComprasNet] HTTP ${res.status} codigoModalidade=${codigoModalidade}`, await res.text().catch(() => ''));
           return [];

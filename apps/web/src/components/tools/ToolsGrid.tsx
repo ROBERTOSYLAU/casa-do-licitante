@@ -12,6 +12,8 @@ import {
 } from '@/components/ui/accordion';
 import CnpjSearch from './CnpjSearch';
 import CepSearch from './CepSearch';
+import CurrencyConverter from './CurrencyConverter';
+import TrackingPlaceholder from './TrackingPlaceholder';
 
 const tools = [
   {
@@ -30,13 +32,13 @@ const tools = [
     id: 'currency',
     label: 'Conversor de Moedas',
     icon: DollarSign,
-    component: <p className="text-white/60">Em breve</p>,
+    component: <CurrencyConverter />,
   },
   {
     id: 'tracking',
     label: 'Rastreamento de Encomendas',
     icon: Package,
-    component: <p className="text-white/60">Em breve</p>,
+    component: <TrackingPlaceholder />,
   },
 ];
 

@@ -5,6 +5,7 @@
 import { Worker } from 'bullmq';
 import { redis, queues } from './queues/index.js';
 import { handleIngestPncp } from './jobs/ingest-pncp.js';
+import { handleIngestComprasnet } from './jobs/ingest-comprasnet.js';
 import { QUEUE } from '@casa/domain';
 
 console.log('[worker] Starting Casa do Licitante worker...');
@@ -16,11 +17,23 @@ const pncpWorker = new Worker(QUEUE.INGEST_PNCP, handleIngestPncp, {
   concurrency: 2,
 });
 
+const comprasnetWorker = new Worker(QUEUE.INGEST_COMPRASNET, handleIngestComprasnet, {
+  connection: redis,
+  concurrency: 2,
+});
+
 pncpWorker.on('completed', (job) =>
   console.log(`[ingest:pncp] job ${job.id} completed`),
 );
 pncpWorker.on('failed', (job, err) =>
   console.error(`[ingest:pncp] job ${job?.id} failed:`, err.message),
+);
+
+comprasnetWorker.on('completed', (job) =>
+  console.log(`[ingest:comprasnet] job ${job.id} completed`),
+);
+comprasnetWorker.on('failed', (job, err) =>
+  console.error(`[ingest:comprasnet] job ${job?.id} failed:`, err.message),
 );
 
 // ── Cron schedulers ──────────────────────────────────────────────────────────
@@ -58,6 +71,7 @@ scheduleCrons().catch(console.error);
 async function shutdown() {
   console.log('[worker] Shutting down...');
   await pncpWorker.close();
+  await comprasnetWorker.close();
   await redis.quit();
   process.exit(0);
 }

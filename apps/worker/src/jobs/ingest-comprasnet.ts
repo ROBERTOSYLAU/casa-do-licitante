@@ -1,45 +1,41 @@
-/**
- * ingest:pncp job — fetches yesterday's publications from PNCP and upserts
- * into the canonical licitacoes table.
- *
- * Pattern: fetch raw → store in raw_pncp_records → normalize → upsert canonical
- * Idempotent: uses upsert on (source, sourceId)
- */
 import type { Job } from 'bullmq';
 import { prisma } from '../db.js';
-import { fetchPncpBids } from '@casa/gov-apis';
+import { fetchComprasnetBids } from '@casa/gov-apis';
 import type { IngestJobPayload } from '@casa/domain';
 
 function toBigIntOrUndefined(value?: number) {
   return value != null ? BigInt(value) : undefined;
 }
 
-export async function handleIngestPncp(job: Job<IngestJobPayload>) {
+export async function handleIngestComprasnet(job: Job<IngestJobPayload>) {
   const { dataInicial, dataFinal } = job.data;
   const syncLog = await prisma.syncLog.create({
-    data: { source: 'pncp', jobId: job.id, startedAt: new Date(), status: 'running' },
+    data: { source: 'comprasnet', jobId: job.id, startedAt: new Date(), status: 'running' },
   });
 
   let fetched = 0;
   let upserted = 0;
 
   try {
-    const results = await fetchPncpBids({ dataInicial, dataFinal, source: 'pncp' });
+    const results = await fetchComprasnetBids({
+      dataInicial,
+      dataFinal,
+      source: 'comprasnet',
+      periodoTipo: 'publicacao',
+    });
     fetched = results.length;
 
     for (const r of results) {
-      // Store raw record first (immutable audit trail)
-      await prisma.rawPncpRecord.upsert({
+      await prisma.rawComprasnetRecord.upsert({
         where: { sourceId: r.sourceId },
         create: { sourceId: r.sourceId, payload: r as object },
         update: { payload: r as object },
       });
 
-      // Upsert canonical record
       await prisma.licitacao.upsert({
-        where: { source_sourceId: { source: 'pncp', sourceId: r.sourceId } },
+        where: { source_sourceId: { source: 'comprasnet', sourceId: r.sourceId } },
         create: {
-          source: 'pncp',
+          source: 'comprasnet',
           sourceId: r.sourceId,
           modalidade: mapModalidade(r.modalidade),
           status: r.status,
@@ -49,6 +45,7 @@ export async function handleIngestPncp(job: Job<IngestJobPayload>) {
           orgaoMunicipio: r.municipio,
           objeto: r.objeto,
           valorEstimado: toBigIntOrUndefined(r.valorEstimado),
+          dataPublicacao: r.dataAbertura ? new Date(r.dataAbertura) : undefined,
           dataAbertura: r.dataAbertura ? new Date(r.dataAbertura) : undefined,
           dataEncerramentoPropostas: r.dataEncerramentoPropostas
             ? new Date(r.dataEncerramentoPropostas)
@@ -58,6 +55,11 @@ export async function handleIngestPncp(job: Job<IngestJobPayload>) {
           status: r.status,
           valorEstimado: toBigIntOrUndefined(r.valorEstimado),
           sourceSyncedAt: new Date(),
+          dataPublicacao: r.dataAbertura ? new Date(r.dataAbertura) : undefined,
+          dataAbertura: r.dataAbertura ? new Date(r.dataAbertura) : undefined,
+          dataEncerramentoPropostas: r.dataEncerramentoPropostas
+            ? new Date(r.dataEncerramentoPropostas)
+            : undefined,
         },
       });
       upserted++;
@@ -92,9 +94,26 @@ function mapModalidade(m: string) {
     pregao_eletronico: 'pregao_eletronico',
     pregao_presencial: 'pregao_presencial',
     concorrencia: 'concorrencia',
+    tomada_preco: 'tomada_preco',
+    convite: 'convite',
     dispensa: 'dispensa',
     inexigibilidade: 'inexigibilidade',
     credenciamento: 'credenciamento',
+    leilao: 'leilao',
+    concurso: 'concurso',
+    rdc: 'rdc',
   };
-  return (map[m] ?? 'outro') as 'pregao_eletronico' | 'outro';
+  return (map[m] ?? 'outro') as
+    | 'pregao_eletronico'
+    | 'pregao_presencial'
+    | 'concorrencia'
+    | 'tomada_preco'
+    | 'convite'
+    | 'dispensa'
+    | 'inexigibilidade'
+    | 'credenciamento'
+    | 'leilao'
+    | 'concurso'
+    | 'rdc'
+    | 'outro';
 }
