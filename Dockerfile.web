@@ -19,10 +19,12 @@ RUN pnpm --filter @casa/web build
 
 FROM base AS runner
 ENV NODE_ENV=production
-COPY --from=deps /app/node_modules ./node_modules
-# pnpm workspaces: each package needs its own node_modules for .bin/ symlinks
-COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
-COPY --from=deps /app/packages/db/node_modules ./packages/db/node_modules
+# Copiar node_modules do builder (não do deps!) para incluir o Prisma engine gerado
+# pelo db:generate. O deps stage não roda prisma generate, então o .so.node estaria faltando.
+COPY --from=builder /app/node_modules ./node_modules
+# pnpm workspaces: binários ficam no node_modules local do workspace (.bin/next, .bin/prisma)
+COPY --from=builder /app/apps/web/node_modules ./apps/web/node_modules
+COPY --from=builder /app/packages/db/node_modules ./packages/db/node_modules
 COPY --from=builder /app/apps/web/.next ./apps/web/.next
 COPY --from=builder /app/apps/web/package.json ./apps/web/package.json
 COPY --from=builder /app/packages ./packages

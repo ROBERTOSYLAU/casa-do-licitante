@@ -13,4 +13,5 @@ ENV NODE_ENV=production
 # tsx resolve imports TypeScript em runtime — necessário porque @casa/domain expõe
 # src/index.ts diretamente (sem build step). tsc compilado não resolve './types'
 # sem extensão .js no ESM do Node.js. tsx usa esbuild internamente e lida com isso.
-CMD ["node_modules/.bin/tsx", "apps/worker/src/index.ts"]
+# pnpm --filter garante que tsx seja encontrado no node_modules do workspace.
+CMD ["pnpm", "--filter", "@casa/worker", "start"]
