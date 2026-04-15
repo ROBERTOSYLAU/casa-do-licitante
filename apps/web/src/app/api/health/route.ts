@@ -1,4 +1,5 @@
 import { prisma } from '@casa/db';
+import { Redis } from 'ioredis';
 import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +17,6 @@ export async function GET() {
 
   try {
     const redisUrl = process.env['REDIS_URL'] ?? 'redis://localhost:6379';
-    const { Redis } = await import('ioredis');
     const redis = new Redis(redisUrl, { maxRetriesPerRequest: 1, lazyConnect: true });
     await redis.connect();
     await redis.ping();
