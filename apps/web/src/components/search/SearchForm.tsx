@@ -283,7 +283,7 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
                     mode="range"
                     selected={dateRange}
                     onSelect={(range) => {
-                      setDateRange(range ?? {});
+                      setDateRange(range ?? { from: undefined });
                       // Fecha automaticamente ao completar o range
                       if (range?.from && range?.to) {
                         setTimeout(() => setCalendarOpen(false), 200);
