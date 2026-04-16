@@ -64,7 +64,7 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
       filters.push({
         key: 'dateRange',
         label: formatRange(dateRange),
-        onRemove: () => setDateRange({}),
+        onRemove: () => setDateRange({ from: undefined }),
       });
     }
     if (source && source !== 'ambos') {
@@ -88,7 +88,7 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
   }
 
   function handleClear() {
-    setDateRange({});
+    setDateRange({ from: undefined });
     setUf('');
     setModalidade('');
     setSource('comprasnet');
@@ -248,7 +248,7 @@ export default function SearchForm({ onSearch, isLoading }: Props) {
                   {dateRange.from && (
                     <button
                       type="button"
-                      onClick={() => setDateRange({})}
+                      onClick={() => setDateRange({ from: undefined })}
                       className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-white/40 transition hover:text-white/70"
                     >
                       Limpar datas
