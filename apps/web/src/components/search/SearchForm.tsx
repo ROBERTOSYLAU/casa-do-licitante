@@ -39,7 +39,7 @@ function formatRange(range: DateRange): string {
 }
 
 export default function SearchForm({ onSearch, isLoading }: Props) {
-  const [dateRange, setDateRange] = useState<DateRange>({});
+  const [dateRange, setDateRange] = useState<DateRange>({ from: undefined });
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [uf, setUf] = useState('');
   const [modalidade, setModalidade] = useState('');
